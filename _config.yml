@@ -1,0 +1,38 @@
+# visit https://github.com/mojombo/jekyll/wiki/Configuration for more settings
+
+paginate: 10 # pagination based on number of posts
+paginate_path: "page:num"
+exclude: ["README.md"] # files to exclude
+highlighter: rouge
+markdown: kramdown
+disqus: quentin meffre
+google_analytics: UA-90952644-1
+title: quentin meffre
+
+defaults:
+  -
+    scope:
+      path: "" # empty string for all files
+    values:
+      title: quentin meffre
+
+description: Computer science student, passionate about Cyber Security.
+author:
+  name: Quentin Meffre
+  email: quentin.meffre@epitech.eu
+  github: https://github.com/meffre-q
+  twitter: https://twitter.com/0xdagger
+  linkedin: https://www.linkedin.com/in/quentin-meffre/
+  bio: Computer science student, passionate about Cyber Security.
+
+rss_path: feed.xml
+categories_path: categories.html
+tags_path: tags.html
+
+# set it as url of an image
+# sidebar_background_image: https://www.dropbox.com/s/g9h23zrycedxtk5/sky.png?raw=1
+
+BASE_PATH:
+
+plugins:
+  - jekyll-paginate

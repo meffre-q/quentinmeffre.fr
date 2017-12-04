@@ -1,0 +1,8 @@
+# Exclude idea default directory
+.idea
+
+# Exclude C object files
+*.[oa]
+
+# cmake debug
+cmake-build-debug
