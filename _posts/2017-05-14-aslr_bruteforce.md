@@ -2,7 +2,7 @@
 layout: post
 title: ASLR Bruteforce
 categories: [pwn]
-tags: [pwn, asm]
+tags: [pwn]
 description: How to defeat ASLR on a 32 bits Linux system.
 ---
 

@@ -20,9 +20,9 @@ description: Computer science student, passionate about Cyber Security.
 author:
   name: Quentin Meffre
   email: quentin.meffre@epitech.eu
-  github: https://github.com/meffre-q
-  twitter: https://twitter.com/0xdagger
-  linkedin: https://www.linkedin.com/in/quentin-meffre/
+  github: meffre-q
+  twitter: 0xdagger
+  linkedin: quentin-meffre
   bio: Computer science student, passionate about Cyber Security.
 
 rss_path: feed.xml

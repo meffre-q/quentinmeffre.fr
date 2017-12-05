@@ -2,7 +2,7 @@
 layout: post
 title: Basic Shellcode
 categories: [shellcode]
-tags: [shellcode, asm]
+tags: [shellcode]
 description: Introduction to shellcode on a Linux system.
 ---
 
