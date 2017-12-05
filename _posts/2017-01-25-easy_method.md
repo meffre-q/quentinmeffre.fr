@@ -1,8 +1,8 @@
 ---
 layout: post
-title: "[Return Oriented Programming] Easy method"
+title: "[ROP] Easy method"
 categories: [pwn]
-tags: [pwn]
+tags: [pwn, ROP]
 description: How to bypass NX/ASLR protections with a statically linked binary using ROP on a x64 Linux system.
 ---
 
