@@ -100,7 +100,7 @@ Done.
 Well played to my friend!
 
 # 2. BasicROP
-As it is sayed in the challenge name, this one is a very basic Return Oriented Programming. For thos who don't know what is the ROP technique, I redirect you to one of my precedent [post](http://quentinmeffre.fr/return-oriented-programming-1/).
+As it is sayed in the challenge name, this one is a very basic Return Oriented Programming. For thos who don't know what is the ROP technique, I redirect you to one of my precedent [post](/pwn/2017/01/25/easy_method.html).
 
 I first begin by taking a look to the binary, the size, the protection, the type, etc...
 ```bash

