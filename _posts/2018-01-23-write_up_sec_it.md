@@ -18,7 +18,7 @@ I did all the challenges and I really like the "Bad auth" challenge. Basically, 
 This write-up is split in multiple parts:
 
 1. [Introduction](/write-up/2018/01/23/write_up_sec_it.html#introduction)
-2. [Binary leak](/write-up/2018/01/23/write_up_sec_it.html#binary-leak)
+2. [Binary dump](/write-up/2018/01/23/write_up_sec_it.html#binary-dump)
 3. [ASLR Defeat](/write-up/2018/01/23/write_up_sec_it.html#aslr-defeat)
 4. [Magic gadget](/write-up/2018/01/23/write_up_sec_it.html#magic-gadget)
 5. [Format string](/write-up/2018/01/23/write_up_sec_it.html#format-string)
@@ -28,36 +28,36 @@ This write-up is split in multiple parts:
 9. [References](/write-up/2018/01/23/write_up_sec_it.html#references)
 
 # Introduction
-As you can see on the last screenshot, compare to the others challenges, this one was given without binary access. We only have the IP address and the port to connect to the service.
+As you can see on the last screenshot, compare to the other challenges, this one was given without binary access. We only have the IP address and the port to connect to the service.
 
-So let's start by connected to the service and see what's happening.
+So let's start by connecting to the service and see what's happening.
 
 ![Connect to service](/assets/media/blind_fmt.png)
 
-It seems to be a basic authentication system. The vulnerability is very easy to find. When we type a wrong password, the service display on its output the input password followed by " is a wrong password!". I think the C code look like this:
+It seems to be a basic authentication system. The vulnerability is very easy to find. When we type a wrong password, the service display on its output the input password followed by " is a wrong password!". I think the C code looks like this:
 ```c
 printf(password);                   // Vulnerable to format strings
 printf(" is a wrong password!");
 ```
 
-The developer forgot to hardcoded the format string of the "printf" function, this means that we have fully control on the format argument.
+The developer forgot to hard-code the format string of printf(), this means that we have fully control on the format argument.
 
-The variadic list passed in the second argument of "printf" represent the variable which the developer want to display. Before one call to "printf", this list is fully move to the stack. So we can say that "printf" will display one part of the stack. But if the developer let the control to the first "printf" argument to the user, it will be able to send as much format as he want and so on, read or write any value in the memory.
+The variadic list passed in the second argument of printf() represent the variable which the developer wants to display. Before one call to printf(), this list is fully move to the stack. So we can say that printf() will display one part of the stack. But if the developer let the control to the first printf() argument to the user, it will be able to send as much format strings as he wants and so on, read or write any value in the memory.
 
 The password of the service is easy to find but I will not show you how to do it because it represent the solution to the challenge. So don't be confused if I used it later.
 
 Let summarize what we have here:
-- We have a service whithout real access to the binary.
+- We have a remote service without the binary file (ELF).
 - Our service got a format strings vulnerability.
-- This are only supposition but, as every binary's of the website are compile like this, I think that our service have the following protections: ASLR / No eXecutable / PARTIAL RELocation Read-Only.
-- We also supposed that the binary used the same LibC than the given one for the other challenges.
+- This is only a supposition but, as every binary of the website is compiled like this, I think our service has the following protections: ASLR / No eXecutable / PARTIAL RELocation Read-Only.
+- We also suppose that the binary used the same LibC than the given one for the other challenges.
 
-To exploit this kind of situation, we are first going to leak our binary to have a better idea of what it looks like, then we are going to leak different Global Offset Table entry's, then we are going to leak one address to defeat the ASLR and then we are going to overwrite one of them with the address of the "system" function to execute "/bin/sh" and get a shell! (At the beginning that was what I thought I would do...)
+To exploit this kind of situation, we are going to dump the binary to perform static analysis, leak Libc address and overwrite a function pointer from the GOT to call system().
 
-# Binary leak
-As the Global Offset Table is writable, the first step is going to be to leak our binary. Our aim is to read the GOT entry's to overwrite one of them.
+# Binary dump
+As the Global Offset Table is writable, the first step is to dump our binary. Our aim is to read the GOT entries to overwrite one of them.
 
-To do it, we are going to use the "%s" "printf" format which is used to dereference an address and so read its content. The idea is to make a loop which iterate all over the memory address's to read the binary sections we need. Our format strings payload look like this:
+To do it, we are going to use the "%s" printf format which is used to dereference an address and so read its content. The idea is to make a loop which iterate all over the memory address's to read the binary sections we need. Our format strings payload look like this:
 ```bash
 +------------+------------+
 |            |            |
@@ -67,7 +67,8 @@ To do it, we are going to use the "%s" "printf" format which is used to derefere
 ```
 
 The format string is composed of two parts. The first part is going to dereference the 7th address of the stack which represent our address and the second part is the 7th address of the stack so it's going to be the memory address that we want to look at.
-Every binary section are not loaded into memory by "ld.so". (See References for details)
+
+An ELF binary file is composed of many sections but they are not all mapped into memory by "ld.so". (See References for details)
 
 We are going to get more section as we can but the most interesting for us are the following one:
 - ".text" because it contain the assembly code of the service so it going to help us to understand how the service work and it also going to help us to leak the next section.
@@ -93,20 +94,20 @@ Now that we dump all the binary we are able to read the code! As the binary don'
 
 ![Binary code](/assets/media/binary_code.png)
 
-This function is the one which is used for the authentication. The function begin by read 0x63 bytes on its input, then compare the input with the final password using the "strcmp" function and the function return either "1" if the password is equal or "0" if they are not equal. If the password are not equal, the function also make two calls to the "printf" function. (you can see the calls at the address 0x4008A5) This is the first call to "printf" which is vulnerable to the format strings attack. (As I explain earlier)
+This function is the one which is used for the authentication. The function begin by read 0x63 bytes on its input, then compares the input with the final password using strcmp() and the function returns either "1" if the password is equal or "0" if they are not equal. If the password is not equal, the function also makes two calls to printf() function. (you can see the calls at the address 0x4008A5) This is the first call to printf() which is vulnerable to the format strings attack. (As I explain earlier)
 
 # ASLR Defeat
 Now that we have access to our binary, we need to defeat the Address Space Layout Randomization in order to be able to run our exploit. 
 
-Little remind: The Address Space Layout Randomization is a system protection. Its aim is to randomize different memory space like the stack, the heap or the library loading space. Because of this protection we can't make a simple call to the "system" LibC function because we can't predict its address before running the binary. In order to defeat this protection, we are going to leak another LibC function address's (like "puts" for example) and then we are going to be able to calculate the difference between both functions and get the address of the "system" function.
+Little remind: The Address Space Layout Randomization is a system protection. Its aim is to randomize different memory segments like the stack, the heap or the library loading space. Because of this protection we can't make a simple call to system() because we can't predict its address before running the binary. In order to defeat this protection, we are going to leak another LibC function address's (like puts() for example) and then we are going to be able to calculate the difference between both functions and get the address of system().
 
-To do it, we are going to leak one entry of the Global Offset Table but we need to choose one entry which has already been called otherwise the function address's will not been resolved and so on we will not been able to leak the function address's. So I choose to leak the address of the "puts" function. This function is called at the beginning of the "main" function so its address should already been resolved when the format strings will occur.
+To do it, we are going to leak one entry of the Global Offset Table but we need to choose one entry which has already been called otherwise the function address's will not been resolved and so on we will not been able to leak the function address's. So I choose to leak the address of puts(). This function is called at the beginning of main() so its address should already been resolved when the format strings will occur.
 
-Let's check in the Global Offset Table what is the address of the "puts" entry. 
+Let's check in the Global Offset Table what is the address of puts().
 
 ![Global Offset Table](/assets/media/global_offset_table.png)
 
-As you can see, the "puts" address's is the first entry of the Global Offset Table. So to get the function address we have to check what is the content of the address "0x601018". One more time we are going to use the same tricks that we used to leak the binary in order to dereferenced this address.
+As you can see, the puts() address's is the first entry of the Global Offset Table. So to get the function address we have to check what is the content of the address "0x601018". One more time we are going to use the same tricks that we used to leak the binary in order to dereferenced this address.
 
 ![Leak puts](/assets/media/leak_puts.png)
 
@@ -115,13 +116,13 @@ After a check, it seems to be the right address.
 Now, as we are able to calculate every LibC function, the ASLR is being useless.
 
 # Magic gadget
-To exploit this binary, my first idea was to overwrite the GOT entry of the "printf" function with the "system" function address and then send the string "/bin/sh" to "system" but as you can see on the precedent image, between the call to "bzero" and "fflush", there is a call to "printf" so if we overwrite this function address with the one of "system", the binary is going to Segmentation Fault when it will call "printf" because we don't control its argument.
+To exploit this binary, my first idea was to overwrite the GOT entry of printf() with the address of system() and then send the string "/bin/sh" to system() but as you can see on the precedent image, between the call to bzero() and fflush(), there is a call to printf() so if we overwrite this function address with the one of system(), the binary is going to Segmentation Fault when it will call printf() because we don't control its argument.
 
 To bypass this problem, I used the solution of the Magic Gadget. We are going to overwrite one of the GOT entry with the address of one Magic gadget contained in the LibC to get a shell.
 
 But first, what is a Magic Gadget?
 
-A Magic Gadget is a piece of assembly code in the LibC which make a call to the "execve" function with the string "/bin/sh" as argument. There are several Magic Gadget in the LibC but for this exploit I have chosen this one:
+A Magic Gadget is a piece of assembly code in the LibC which make a call to execve() with the string "/bin/sh" as argument. There are several Magic Gadget in the LibC but for this exploit I have chosen this one:
 
 ![Magic Gadget](/assets/media/magic_gadget.png)
 
@@ -130,7 +131,7 @@ But to execute a Magic Gadget, we need to fulfill many conditions. In this case,
 lea rsi, [rsp+0x30]
 ```
 
-This instruction load the address contain at "rsp+0x30" into the register "rsi" which represent the second argument of the call to "execve". The second argument of "execve" is for the argument which are send to our command. ("/bin/sh" in our case) This value must be equal to zero otherwise the call to "execve" will fail.
+This instruction load the address contain at "rsp+0x30" into the register "rsi" which represent the second argument of the call to execve(). The second argument of execve() is for the argument which are send to our command. ("/bin/sh" in our case) This value must be equal to zero otherwise the call to execve() will fail.
 
 # Format string
 Now we only have to build the format strings which we are going to use to write in memory.
@@ -160,12 +161,12 @@ This payload can't work because the ADDRess's contain some NULL bytes so the bin
 
 I have choosen to write my address 2 bytes by 2 bytes because I would like to be able to write the address in only one loop tour. But after did it, it would be better to write my address byte by byte in many loop tour because the exploit is not very optimized and if the bytes of the address that I have to write don't make a cascade, the exploit will fail. So that's needed to run multiple times the exploit to make it works. (One improvement for this exploit should be to improve this part)
 
-For the address overwrite, I have chosen to overwrite the "fclose" GOT entry. The "fclose" function is called when the password authentication is good so the binary open/read the file which contain the flag and then close it using the "fclose" function. After many test, this function was one of these who respect the condition: [rsp+0x30] == 0
+For the address overwrite, I have chosen to overwrite the "fclose" GOT entry. fclose() is called when the password authentication is good so the binary open/read the file which contain the flag and then close it using fclose(). After many test, this function was one of these who respect the condition: [rsp+0x30] == 0
 For example the following functions don't respect this condition: puts, fread, fopen.
 
 # Binary exploitation
 To summarize the final exploit, we are going to:
-- Leak the "puts" function address,
+- Leak the puts() address,
 - Calculate the Magic Gadget address's thanks to the leaked one,
 - Overwrite the "fclose" GOT entry with the Magic Gadget entry,
 - Send the good password to the service to trigger the exploit,
@@ -180,14 +181,14 @@ Done.
 Ps: One more time, I can't give you the exploit because it will leak the solution.
 
 # Correction
-To correct the whole vulnerability it is very simple, the developer has only to add a format to the "printf" call, like this:
+To correct the whole vulnerability it is very simple, the developer has only to add a format to the call to printf(), like this:
 ```c
 printf(password);           // Bad
 printf("%s", password);     // Good
 ```
 
 # Thanks
-I would like to thanks the Sec-IT company for allowing me to post this write-up and also thanks you to the employee who make this very interesting challenge. :)
+I would like to thanks the Sec-IT company for allowing me to post this write-up and also thanks you very much to the author of this very interesting challenge. :)
 
 # References
 - If you want more details about ELF file format, how binary's are loaded into memory, etc.
