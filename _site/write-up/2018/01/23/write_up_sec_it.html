@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>[Write-Up] Sec-IT Bad-Auth Challenge</title>
+	
+	<meta name="description" content="Write-Up on the "Bad auth" Sec-IT challenge, or how to exploit a format strings without having access to the binary. (Blind format strings on an amd64)">
+	
+	<meta name="author" content="Quentin Meffre">
+
+	<!-- Enable responsive viewport -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+	<!--[if lt IE 9]>
+	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<!-- Le styles -->
+	<link href="/assets/resources/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<link href="/assets/resources/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+	<link href="/assets/resources/syntax/syntax.css" rel="stylesheet">
+	<link href="/assets/css/style.css" rel="stylesheet">
+	<link href="/assets/css/syntax.css" rel="stylesheet">
+
+	<!-- Le fav and touch icons -->
+	<!-- Update these with your own images
+	<link rel="shortcut icon" href="images/favicon.ico">
+	<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+	-->
+
+	<link rel="alternate" type="application/rss+xml" title="" href="/feed.xml">
+</head>
+
+<body>
+	<nav class="navbar navbar-default visible-xs" role="navigation">
+		<!-- Brand and toggle get grouped for better mobile display -->
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://github.com/meffre-q">
+				<i class="fa fa-github"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://twitter.com/0xdagger">
+				<i class="fa fa-twitter"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope"></i>
+			</a>
+			
+			<a class="navbar-brand" href="/">
+				<img src="//www.gravatar.com/avatar/?s=35" class="img-circle" />
+				quentin meffre
+			</a>
+		</div>
+
+		<!-- Collect the nav links, forms, and other content for toggling -->
+		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+			<ul class="nav navbar-nav">
+				<li class="active"><a href="/">Home</a></li>
+				<li><a href="/categories.html">Categories</a></li>
+				<li><a href="/tags.html">Tags</a></li>
+			</ul>
+		</div><!-- /.navbar-collapse -->
+	</nav>
+
+	<!-- nav-menu-dropdown -->
+	<div class="btn-group hidden-xs" id="nav-menu">
+		<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+			<i class="fa fa-bars"></i>
+		</button>
+		<ul class="dropdown-menu" role="menu">
+			<li><a href="/"><i class="fa fa-home"></i>Home</a></li>
+			<li><a href="/categories.html"><i class="fa fa-folder"></i>Categories</a></li>
+			<li><a href="/tags.html"><i class="fa fa-tags"></i>Tags</a></li>
+			<li class="divider"></li>
+			<li><a href="#"><i class="fa fa-arrow-up"></i>Top of Page</a></li>
+		</ul>
+	</div>
+
+	<div class="col-sm-3 sidebar hidden-xs" style="">
+		<!-- sidebar.html -->
+<header class="sidebar-header" role="banner">
+	<a href="/">
+		<img src="/assets/media/XAV_1860.JPG" class="img-circle" />
+	</a>
+	<h3 class="title">
+        <a href="/">quentin meffre</a>
+    </h3>
+</header>
+
+
+<div id="bio" class="text-center">
+	Computer science student, passionate about Cyber Security.
+</div>
+
+
+<div id="contact-list" class="text-center">
+	<ul class="list-unstyled list-inline">
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://github.com/meffre-q">
+				<i class="fa fa-github-alt fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://twitter.com/0xdagger">
+				<i class="fa fa-twitter fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope fa-lg"></i>
+			</a>
+		</li>
+		
+	</ul>
+	<ul id="contact-list-secondary" class="list-unstyled list-inline">
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://linkedin.com/in/quentin-meffre">
+				<i class="fa fa-linkedin fa-lg"></i>
+			</a>
+		</li>
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="/feed.xml">
+				<i class="fa fa-rss fa-lg"></i>
+			</a>
+		</li>
+	</ul>
+</div>
+<!-- sidebar.html end -->
+
+	</div>
+
+	<div class="col-sm-9 col-sm-offset-3">
+		<div class="page-header">
+  <h1>[Write-Up] Sec-IT Bad-Auth Challenge </h1>
+</div>
+	
+<article>
+
+	<div class="col-sm-10">
+	 <span class="post-date">
+	   
+	   January 
+	   23rd,
+	     
+	   2018
+	 </span>
+	  <div class="article_body">
+	  <h1 id="surroundings">Surroundings</h1>
+<p><a href="https://www.sec-it-solutions.fr/">Sec-IT</a> is a French company which is specialized in Cyber-security and particulary in the penetration testing field.</p>
+
+<p>Last year (in 2017), they put online their own CTF challenges to test their futur employees. The challenges are focus on “Binary Exploitation”. Currently, the web-site is already online <a href="https://pwn.sec-it-solutions.fr/">here</a>, if you want to test your skills.</p>
+
+<p><img src="/assets/media/sec_it_pwn.png" alt="Sec-IT CTF" /></p>
+
+<p>I did all the challenges and I really like the “Bad auth” challenge. Basically, the challenge was an easy format string and the aim is to get the flag but there is no needed to get a shell to do it. But it is more funny to get a shell so I am going to show you how to exploit a blind format strings on an amd64 architecture to get a shell access.</p>
+
+<p>This write-up is split in multiple parts:</p>
+
+<ol>
+  <li><a href="/write-up/2018/01/23/write_up_sec_it.html#introduction">Introduction</a></li>
+  <li><a href="/write-up/2018/01/23/write_up_sec_it.html#binary-leak">Binary leak</a></li>
+  <li><a href="/write-up/2018/01/23/write_up_sec_it.html#aslr-defeat">ASLR Defeat</a></li>
+  <li><a href="/write-up/2018/01/23/write_up_sec_it.html#magic-gadget">Magic gadget</a></li>
+  <li><a href="/write-up/2018/01/23/write_up_sec_it.html#format-string">Format string</a></li>
+  <li><a href="/write-up/2018/01/23/write_up_sec_it.html#binary-exploitation">Binary exploitation</a></li>
+  <li><a href="/write-up/2018/01/23/write_up_sec_it.html#correction">Correction</a></li>
+  <li><a href="/write-up/2018/01/23/write_up_sec_it.html#thanks">Thanks</a></li>
+  <li><a href="/write-up/2018/01/23/write_up_sec_it.html#references">References</a></li>
+</ol>
+
+<h1 id="introduction">Introduction</h1>
+<p>As you can see on the last screenshot, compare to the others challenges, this one was given without binary access. We only have the IP address and the port to connect to the service.</p>
+
+<p>So let’s start by connected to the service and see what’s happening.</p>
+
+<p><img src="/assets/media/blind_fmt.png" alt="Connect to service" /></p>
+
+<p>It seems to be a basic authentication system. The vulnerability is very easy to find. When we type a wrong password, the service display on its output the input password followed by “ is a wrong password!”. I think the C code look like this:</p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">printf</span><span class="p">(</span><span class="n">password</span><span class="p">);</span>                   <span class="c1">// Vulnerable to format strings
+</span><span class="n">printf</span><span class="p">(</span><span class="s">" is a wrong password!"</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>The developer forgot to hardcoded the format string of the “printf” function, this means that we have fully control on the format argument.</p>
+
+<p>The variadic list passed in the second argument of “printf” represent the variable which the developer want to display. Before one call to “printf”, this list is fully move to the stack. So we can say that “printf” will display one part of the stack. But if the developer let the control to the first “printf” argument to the user, it will be able to send as much format as he want and so on, read or write any value in the memory.</p>
+
+<p>The password of the service is easy to find but I will not show you how to do it because it represent the solution to the challenge. So don’t be confused if I used it later.</p>
+
+<p>Let summarize what we have here:</p>
+<ul>
+  <li>We have a service whithout real access to the binary.</li>
+  <li>Our service got a format strings vulnerability.</li>
+  <li>This are only supposition but, as every binary’s of the website are compile like this, I think that our service have the following protections: ASLR / No eXecutable / PARTIAL RELocation Read-Only.</li>
+  <li>We also supposed that the binary used the same LibC than the given one for the other challenges.</li>
+</ul>
+
+<p>To exploit this kind of situation, we are first going to leak our binary to have a better idea of what it looks like, then we are going to leak different Global Offset Table entry’s, then we are going to leak one address to defeat the ASLR and then we are going to overwrite one of them with the address of the “system” function to execute “/bin/sh” and get a shell! (At the beginning that was what I thought I would do…)</p>
+
+<h1 id="binary-leak">Binary leak</h1>
+<p>As the Global Offset Table is writable, the first step is going to be to leak our binary. Our aim is to read the GOT entry’s to overwrite one of them.</p>
+
+<p>To do it, we are going to use the “%s” “printf” format which is used to dereference an address and so read its content. The idea is to make a loop which iterate all over the memory address’s to read the binary sections we need. Our format strings payload look like this:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>+------------+------------+
+|            |            |
+|    %7<span class="nv">$s</span>    |    ADDR    |
+|            |            |
++------------+------------+
+</code></pre></div></div>
+
+<p>The format string is composed of two parts. The first part is going to dereference the 7th address of the stack which represent our address and the second part is the 7th address of the stack so it’s going to be the memory address that we want to look at.
+Every binary section are not loaded into memory by “ld.so”. (See References for details)</p>
+
+<p>We are going to get more section as we can but the most interesting for us are the following one:</p>
+<ul>
+  <li>“.text” because it contain the assembly code of the service so it going to help us to understand how the service work and it also going to help us to leak the next section.</li>
+  <li>“.plt” to know where are stored the “.got” section.</li>
+  <li>“.got” this section stored the LibC function address’s. (After the dynamic resolve)</li>
+</ul>
+
+<p>Now we have to choose the memory address which we are going to use to iterate over the memory. We first need to leak the “.text” section to be able to leak the “.plt” one. To do it we are going to search the following bytes:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>7f 45 4c 46
+</code></pre></div></div>
+
+<p>They represent the first bytes of the ELF header. (In ASCII the last 3 bytes represent “ELF”)</p>
+
+<p>Basically, the default memory address for an ELF binary is something like “0x400000” and after trying, our bytes are exactly stored at this address! After some random test, we have to leak “0x1000” bytes from the last memory address we have found.</p>
+
+<p>So now we have all the assembly code and we can read it but we can’t do our exploit because we have not yet the Global Offset Table addresses. I have chosen to leak different Data section like the “.data” because they are very close to the section we needed, the “.got”. These sections are often loaded somewhere into memory at the address “0x600000”. After some random try, the beginning of the first data section is “0x600e08” and I have to leak 0x250 bytes to get all the sections mapped at this addresses.</p>
+
+<p>So now we can run our script! (Sorry but I can’t show you the script because it is going to give you one part of the challenge solution)</p>
+
+<p><img src="/assets/media/binary_leaked.png" alt="Binary leaked" /></p>
+
+<p>Now that we dump all the binary we are able to read the code! As the binary don’t have many ELF sections, we can’t open it using the basic GNU tools like objdump, GDB, NM… But this is not a problem for IDA! (I just added many symbols to make the code more understandable)</p>
+
+<p><img src="/assets/media/binary_code.png" alt="Binary code" /></p>
+
+<p>This function is the one which is used for the authentication. The function begin by read 0x63 bytes on its input, then compare the input with the final password using the “strcmp” function and the function return either “1” if the password is equal or “0” if they are not equal. If the password are not equal, the function also make two calls to the “printf” function. (you can see the calls at the address 0x4008A5) This is the first call to “printf” which is vulnerable to the format strings attack. (As I explain earlier)</p>
+
+<h1 id="aslr-defeat">ASLR Defeat</h1>
+<p>Now that we have access to our binary, we need to defeat the Address Space Layout Randomization in order to be able to run our exploit.</p>
+
+<p>Little remind: The Address Space Layout Randomization is a system protection. Its aim is to randomize different memory space like the stack, the heap or the library loading space. Because of this protection we can’t make a simple call to the “system” LibC function because we can’t predict its address before running the binary. In order to defeat this protection, we are going to leak another LibC function address’s (like “puts” for example) and then we are going to be able to calculate the difference between both functions and get the address of the “system” function.</p>
+
+<p>To do it, we are going to leak one entry of the Global Offset Table but we need to choose one entry which has already been called otherwise the function address’s will not been resolved and so on we will not been able to leak the function address’s. So I choose to leak the address of the “puts” function. This function is called at the beginning of the “main” function so its address should already been resolved when the format strings will occur.</p>
+
+<p>Let’s check in the Global Offset Table what is the address of the “puts” entry.</p>
+
+<p><img src="/assets/media/global_offset_table.png" alt="Global Offset Table" /></p>
+
+<p>As you can see, the “puts” address’s is the first entry of the Global Offset Table. So to get the function address we have to check what is the content of the address “0x601018”. One more time we are going to use the same tricks that we used to leak the binary in order to dereferenced this address.</p>
+
+<p><img src="/assets/media/leak_puts.png" alt="Leak puts" /></p>
+
+<p>After a check, it seems to be the right address.</p>
+
+<p>Now, as we are able to calculate every LibC function, the ASLR is being useless.</p>
+
+<h1 id="magic-gadget">Magic gadget</h1>
+<p>To exploit this binary, my first idea was to overwrite the GOT entry of the “printf” function with the “system” function address and then send the string “/bin/sh” to “system” but as you can see on the precedent image, between the call to “bzero” and “fflush”, there is a call to “printf” so if we overwrite this function address with the one of “system”, the binary is going to Segmentation Fault when it will call “printf” because we don’t control its argument.</p>
+
+<p>To bypass this problem, I used the solution of the Magic Gadget. We are going to overwrite one of the GOT entry with the address of one Magic gadget contained in the LibC to get a shell.</p>
+
+<p>But first, what is a Magic Gadget?</p>
+
+<p>A Magic Gadget is a piece of assembly code in the LibC which make a call to the “execve” function with the string “/bin/sh” as argument. There are several Magic Gadget in the LibC but for this exploit I have chosen this one:</p>
+
+<p><img src="/assets/media/magic_gadget.png" alt="Magic Gadget" /></p>
+
+<p>But to execute a Magic Gadget, we need to fulfill many conditions. In this case, you can see the following instruction:</p>
+<div class="language-nasm highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">lea</span> <span class="n">rsi</span><span class="p">,</span> <span class="err">[</span><span class="n">rsp</span><span class="o">+</span><span class="mh">0x30</span><span class="err">]</span>
+</code></pre></div></div>
+
+<p>This instruction load the address contain at “rsp+0x30” into the register “rsi” which represent the second argument of the call to “execve”. The second argument of “execve” is for the argument which are send to our command. (“/bin/sh” in our case) This value must be equal to zero otherwise the call to “execve” will fail.</p>
+
+<h1 id="format-string">Format string</h1>
+<p>Now we only have to build the format strings which we are going to use to write in memory.</p>
+
+<p>Compare to an x86 architecture, on an x64 architecture, that’s a little bit harder to exploit a format strings because the memory address contain some null bytes (“\x00”). So we can’t used a basic payload like:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>+------------+------------+------------+------------+------------+------------+
+|            |            |            |            |            |            |
+|   ADDR+4   |    ADDR    |   %1234c   |   %8<span class="nv">$hn</span>    |   %1234c   |   %9<span class="nv">$hn</span>    |
+|            |            |            |            |            |            |
++------------+------------+------------+------------+------------+------------+
+</code></pre></div></div>
+<p>This payload can’t work because the ADDRess’s contain some NULL bytes so the binary is going to stop reading when it get a NULL bytes and our payload will be cut. To bypass this problem, I have reverse the format part and the address part. The final payload look like this:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>+------------+------------+------------+------------+------------+------------+------------+------------+------------&gt;
+|            |            |            |            |            |            |            |            |            <span class="o">&gt;</span>
+|   %1234c   |   %8<span class="nv">$hn</span>    |   %1234c   |   %9<span class="nv">$hn</span>    |   %1234c   |   %10<span class="nv">$hn</span>   |   %1234c   |   %11<span class="nv">$hn</span>   |    ADDR    <span class="o">&gt;</span>
+|            |            |            |            |            |            |            |            |            <span class="o">&gt;</span>
++------------+------------+------------+------------+------------+------------+------------+------------+------------&gt;
+
+&lt;<span class="nt">------------</span>+------------+------------+
+&lt;            |            |            |
+&lt;   ADDR+2   |   ADDR+4   |   ADDR+6   |
+&lt;            |            |            |
+&lt;<span class="nt">------------</span>+------------+------------+
+</code></pre></div></div>
+
+<p>I have choosen to write my address 2 bytes by 2 bytes because I would like to be able to write the address in only one loop tour. But after did it, it would be better to write my address byte by byte in many loop tour because the exploit is not very optimized and if the bytes of the address that I have to write don’t make a cascade, the exploit will fail. So that’s needed to run multiple times the exploit to make it works. (One improvement for this exploit should be to improve this part)</p>
+
+<p>For the address overwrite, I have chosen to overwrite the “fclose” GOT entry. The “fclose” function is called when the password authentication is good so the binary open/read the file which contain the flag and then close it using the “fclose” function. After many test, this function was one of these who respect the condition: [rsp+0x30] == 0
+For example the following functions don’t respect this condition: puts, fread, fopen.</p>
+
+<h1 id="binary-exploitation">Binary exploitation</h1>
+<p>To summarize the final exploit, we are going to:</p>
+<ul>
+  <li>Leak the “puts” function address,</li>
+  <li>Calculate the Magic Gadget address’s thanks to the leaked one,</li>
+  <li>Overwrite the “fclose” GOT entry with the Magic Gadget entry,</li>
+  <li>Send the good password to the service to trigger the exploit,</li>
+  <li>Have fun!</li>
+</ul>
+
+<p>Let’s test the result:</p>
+
+<p><img src="/assets/media/exploit_test.png" alt="Exploit test" /></p>
+
+<p>Done.</p>
+
+<p>Ps: One more time, I can’t give you the exploit because it will leak the solution.</p>
+
+<h1 id="correction">Correction</h1>
+<p>To correct the whole vulnerability it is very simple, the developer has only to add a format to the “printf” call, like this:</p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">printf</span><span class="p">(</span><span class="n">password</span><span class="p">);</span>           <span class="c1">// Bad
+</span><span class="n">printf</span><span class="p">(</span><span class="s">"%s"</span><span class="p">,</span> <span class="n">password</span><span class="p">);</span>     <span class="c1">// Good
+</span></code></pre></div></div>
+
+<h1 id="thanks">Thanks</h1>
+<p>I would like to thanks the Sec-IT company for allowing me to post this write-up and also thanks you to the employee who make this very interesting challenge. :)</p>
+
+<h1 id="references">References</h1>
+<ul>
+  <li>If you want more details about ELF file format, how binary’s are loaded into memory, etc.</li>
+</ul>
+
+<p><a href="https://www.cs.stevens.edu/~jschauma/810/elf.html">https://www.cs.stevens.edu/~jschauma/810/elf.html</a></p>
+
+	  </div>
+
+		
+		<ul class="tag_box list-unstyled list-inline">
+		  <li><i class="fa fa-folder-open"></i></li>
+		  
+		  
+			 
+				<li><a href="/categories.html#write-up-ref">
+					write-up <span>(3)</span>
+					
+				</a></li>
+			
+		  
+		</ul>
+		  
+
+		
+		<ul class="list-inline">
+		  <li><i class="fa fa-tags"></i></li>
+		  
+		  
+			 
+				<li>
+					<a href="/tags.html#pwn-ref">
+					pwn <span>(8)</span>
+					
+					</a>
+				</li>
+			
+		  
+		  
+		</ul>
+		  
+
+		<hr>
+
+		<div>
+      <section class="share col-sm-6">
+        <h4 class="section-title">Share Post</h4>
+        <a class="btn btn-default btn-sm twitter" href="http://twitter.com/share?text=[Write-Up] Sec-IT Bad-Auth Challenge&via=0xdagger"
+           onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <i class="fa fa-twitter fa-lg"></i>
+          Twitter
+        </a>
+        <a class="btn btn-default btn-sm facebook" href="https://www.facebook.com/sharer/sharer.php"
+           onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <i class="fa fa-facebook fa-lg"></i>
+          Facebook
+        </a>
+        <a class="btn btn-default btn-sm gplus"
+           onclick="window.open('https://plus.google.com/share?url='+window.location.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <i class="fa fa-google-plus fa-lg"></i>
+          Google+
+        </a>
+      </section>
+
+      <section class="col-sm-6 author">
+        <img src="//www.gravatar.com/avatar/" class="img-rounded author-image" />
+        <h4 class="section-title author-name">Quentin Meffre</h4>
+        <p class="author-bio">Computer science student, passionate about Cyber Security.</p>
+      </section>
+    </div>
+
+    <div class="clearfix"></div>
+
+		<ul class="pager">
+		  
+		  <li class="previous"><a href="/write-up/2017/09/26/cyber@hack.html" title="[Write-Up] Cyber@Hack">&larr; Previous</a></li>
+		  
+		  
+			<li class="next disabled"><a>Next &rarr;</a>
+		  
+		</ul>
+
+		<hr>
+	</div>
+	
+	<div class="col-sm-2 sidebar-2">
+	
+	</div>
+</article>
+<div class="clearfix"></div>
+
+
+
+
+
+		<footer>
+			<hr/>
+			<p>
+				&copy; 2018 Quentin Meffre with <a href="http://jekyllrb.com/">Jekyll</a>. Theme: <a href="https://github.com/dbtek/dbyll">dbyll</a> by dbtek.
+			</p>
+		</footer>
+	</div>
+
+	<script type="text/javascript" src="/assets/resources/jquery/jquery.min.js"></script>
+	<script type="text/javascript" src="/assets/resources/bootstrap/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/assets/js/app.js"></script>
+</body>
+</html>
+
+
+
+<!-- Asynchronous Google Analytics snippet -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-90952644-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
