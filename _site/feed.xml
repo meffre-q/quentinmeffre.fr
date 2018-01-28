@@ -127,7 +127,7 @@
 
 &lt;p&gt;But first, what is a Magic Gadget?&lt;/p&gt;
 
-&lt;p&gt;A Magic Gadget is a piece of assembly code in the LibC which make a call to execve() with the string “/bin/sh” as argument. There are several Magic Gadget in the LibC but for this exploit I have chosen this one:&lt;/p&gt;
+&lt;p&gt;A Magic Gadget is a piece of assembly code in the LibC which make a call to execve() with the string “/bin/sh” as argument. (see References for details) There are several Magic Gadget in the LibC but for this exploit I have chosen this one:&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/media/magic_gadget.png&quot; alt=&quot;Magic Gadget&quot; /&gt;&lt;/p&gt;
 
@@ -195,10 +195,16 @@ For example the following functions don’t respect this condition: puts, fread,
 
 &lt;h1 id=&quot;references&quot;&gt;References&lt;/h1&gt;
 &lt;ul&gt;
-  &lt;li&gt;If you want more details about ELF file format, how binary’s are loaded into memory, etc.&lt;/li&gt;
+  &lt;li&gt;More details about ELF file format, how binary’s are loaded into memory, etc.&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;&lt;a href=&quot;https://www.cs.stevens.edu/~jschauma/810/elf.html&quot;&gt;https://www.cs.stevens.edu/~jschauma/810/elf.html&lt;/a&gt;&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;More details about LibC Magic Gadgets.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://kimiyuki.net/blog/2016/09/16/one-gadget-rce-ubuntu-1604/&quot;&gt;https://kimiyuki.net/blog/2016/09/16/one-gadget-rce-ubuntu-1604/&lt;/a&gt;&lt;/p&gt;
 </description>
 				<pubDate>Tue, 23 Jan 2018 00:00:00 +0000</pubDate>
 				<link>/write-up/2018/01/23/write_up_sec_it.html</link>

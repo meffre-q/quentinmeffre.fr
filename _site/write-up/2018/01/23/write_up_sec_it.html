@@ -285,7 +285,7 @@
 
 <p>But first, what is a Magic Gadget?</p>
 
-<p>A Magic Gadget is a piece of assembly code in the LibC which make a call to execve() with the string “/bin/sh” as argument. There are several Magic Gadget in the LibC but for this exploit I have chosen this one:</p>
+<p>A Magic Gadget is a piece of assembly code in the LibC which make a call to execve() with the string “/bin/sh” as argument. (see References for details) There are several Magic Gadget in the LibC but for this exploit I have chosen this one:</p>
 
 <p><img src="/assets/media/magic_gadget.png" alt="Magic Gadget" /></p>
 
@@ -353,10 +353,16 @@ For example the following functions don’t respect this condition: puts, fread,
 
 <h1 id="references">References</h1>
 <ul>
-  <li>If you want more details about ELF file format, how binary’s are loaded into memory, etc.</li>
+  <li>More details about ELF file format, how binary’s are loaded into memory, etc.</li>
 </ul>
 
 <p><a href="https://www.cs.stevens.edu/~jschauma/810/elf.html">https://www.cs.stevens.edu/~jschauma/810/elf.html</a></p>
+
+<ul>
+  <li>More details about LibC Magic Gadgets.</li>
+</ul>
+
+<p><a href="https://kimiyuki.net/blog/2016/09/16/one-gadget-rce-ubuntu-1604/">https://kimiyuki.net/blog/2016/09/16/one-gadget-rce-ubuntu-1604/</a></p>
 
 	  </div>
 

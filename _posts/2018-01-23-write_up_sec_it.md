@@ -122,7 +122,7 @@ To bypass this problem, I used the solution of the Magic Gadget. We are going to
 
 But first, what is a Magic Gadget?
 
-A Magic Gadget is a piece of assembly code in the LibC which make a call to execve() with the string "/bin/sh" as argument. There are several Magic Gadget in the LibC but for this exploit I have chosen this one:
+A Magic Gadget is a piece of assembly code in the LibC which make a call to execve() with the string "/bin/sh" as argument. (see References for details) There are several Magic Gadget in the LibC but for this exploit I have chosen this one:
 
 ![Magic Gadget](/assets/media/magic_gadget.png)
 
@@ -191,6 +191,10 @@ printf("%s", password);     // Good
 I would like to thanks the Sec-IT company for allowing me to post this write-up and also thanks you very much to the author of this very interesting challenge. :)
 
 # References
-- If you want more details about ELF file format, how binary's are loaded into memory, etc.
+- More details about ELF file format, how binary's are loaded into memory, etc.
 
 [https://www.cs.stevens.edu/~jschauma/810/elf.html](https://www.cs.stevens.edu/~jschauma/810/elf.html)
+
+- More details about LibC Magic Gadgets.
+
+[https://kimiyuki.net/blog/2016/09/16/one-gadget-rce-ubuntu-1604/](https://kimiyuki.net/blog/2016/09/16/one-gadget-rce-ubuntu-1604/)
