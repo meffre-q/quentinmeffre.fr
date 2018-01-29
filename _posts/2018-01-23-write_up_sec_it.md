@@ -9,7 +9,7 @@ description: Write-Up on the "Bad auth" SEC-IT challenge, or how to exploit a fo
 # Surroundings
 [SEC-IT](https://www.sec-it-solutions.fr/) is a French company which is specialized in Cyber-security and particulary in the penetration testing field.
 
-Last year (in 2017), they put online their own CTF challenges to test their futur employees. The challenges are focus on "Binary Exploitation". Currently, the web-site is already online [here](https://pwn.sec-it-solutions.fr/), if you want to test your skills and have fun.
+Since 2017, SEC-IT has set its own CTF challenges to evaluate the skills of job candidates. The website is available [here](https://pwn.sec-it-solutions.fr/), if you want to test your skills and have fun.
 
 ![Sec-IT CTF](/assets/media/sec_it_pwn.png)
 
