@@ -1,15 +1,15 @@
 ---
 layout: post
-title: "[Write-Up] Sec-IT Bad-Auth Challenge"
+title: "[Write-Up] SEC-IT Bad-Auth Challenge"
 categories: [write-up]
 tags: [pwn]
-description: Write-Up on the "Bad auth" Sec-IT challenge, or how to exploit a format strings without having access to the binary. (Blind format strings on an amd64)
+description: Write-Up on the "Bad auth" SEC-IT challenge, or how to exploit a format strings without having access to the binary. (Blind format strings on an amd64)
 ---
 
 # Surroundings
-[Sec-IT](https://www.sec-it-solutions.fr/) is a French company which is specialized in Cyber-security and particulary in the penetration testing field.
+[SEC-IT](https://www.sec-it-solutions.fr/) is a French company which is specialized in Cyber-security and particulary in the penetration testing field.
 
-Last year (in 2017), they put online their own CTF challenges to test their futur employees. The challenges are focus on "Binary Exploitation". Currently, the web-site is already online [here](https://pwn.sec-it-solutions.fr/), if you want to test your skills.
+Last year (in 2017), they put online their own CTF challenges to test their futur employees. The challenges are focus on "Binary Exploitation". Currently, the web-site is already online [here](https://pwn.sec-it-solutions.fr/), if you want to test your skills and have fun.
 
 ![Sec-IT CTF](/assets/media/sec_it_pwn.png)
 
@@ -188,7 +188,7 @@ printf("%s", password);     // Good
 ```
 
 # Thanks
-I would like to thanks the Sec-IT company for allowing me to post this write-up and also thanks you very much to the author of this very interesting challenge. :)
+I would like to thanks the SEC-IT company for allowing me to post this write-up and also thanks you very much to the author of this very interesting challenge. :)
 
 # References
 - More details about ELF file format, how binary's are loaded into memory, etc.
