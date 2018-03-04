@@ -13,6 +13,8 @@
 &lt;h1 id=&quot;surroundings&quot;&gt;Surroundings&lt;/h1&gt;
 &lt;p&gt;This week-end took place the &lt;a href=&quot;https://www.pragyan.org/18/home/&quot;&gt;Pragyan CTF&lt;/a&gt;. This Write-Up is going to show you how to solve the “Old school hack” pwnable challenges. This challenge was interesting because it was a mix between a wargame challenge and a classic exploit.&lt;/p&gt;
 
+&lt;p&gt;You can find the binary/exploit &lt;a href=&quot;https://github.com/meffre-q/ctf/tree/master/pragyan/pwn&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+
 &lt;h1 id=&quot;challenge&quot;&gt;Challenge&lt;/h1&gt;
 &lt;p&gt;This challenge is provided with a binary and an pair of IP/port. After a quick test, the binary is running into the given server.&lt;/p&gt;
 
@@ -104,6 +106,7 @@ python &lt;span class=&quot;nt&quot;&gt;-c&lt;/span&gt; &lt;span class=&quot;s1&
 &lt;p&gt;&lt;img src=&quot;/assets/media/pragyan_flag.png&quot; alt=&quot;Done&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;Done.&lt;/p&gt;
+
 </description>
 				<pubDate>Sun, 04 Mar 2018 00:00:00 +0000</pubDate>
 				<link>/write-up/2018/03/04/write_up_pragyan.html</link>

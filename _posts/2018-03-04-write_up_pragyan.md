@@ -9,6 +9,8 @@ tags: [pwn]
 # Surroundings
 This week-end took place the [Pragyan CTF](https://www.pragyan.org/18/home/). This Write-Up is going to show you how to solve the "Old school hack" pwnable challenges. This challenge was interesting because it was a mix between a wargame challenge and a classic exploit.
 
+You can find the binary/exploit [here](https://github.com/meffre-q/ctf/tree/master/pragyan/pwn).
+
 # Challenge
 This challenge is provided with a binary and an pair of IP/port. After a quick test, the binary is running into the given server.
 
@@ -93,3 +95,4 @@ Now let's try it:
 ![Done](/assets/media/pragyan_flag.png)
 
 Done.
+
