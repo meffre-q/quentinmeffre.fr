@@ -11,18 +11,18 @@
 				<description>&lt;p&gt;&lt;strong&gt;Points:&lt;/strong&gt; 200 &lt;strong&gt;Category:&lt;/strong&gt; Pwn &lt;strong&gt;Description:&lt;/strong&gt;  Chris is trying out to be a police officer and the applications have just been sent into the police academy. He is really eager to find out about his competition. Help it him back the system and view the other applicant’s applications.&lt;/p&gt;
 
 &lt;h1 id=&quot;surroundings&quot;&gt;Surroundings&lt;/h1&gt;
-&lt;p&gt;This week-end took place the &lt;a href=&quot;https://www.pragyan.org/18/home/&quot;&gt;Pragyan CTF&lt;/a&gt;. This Write-Up is going to show you how to solve the “Old school hack” pwnable challenges. This challenge was interesting because it was a mix between a wargame challenge and a classic exploit.&lt;/p&gt;
+&lt;p&gt;This week-end took place the &lt;a href=&quot;https://www.pragyan.org/18/home/&quot;&gt;Pragyan CTF&lt;/a&gt;. This Write-Up is going to show you my solution for the “Old school hack” pwnable challenge. This challenge is interesting because it is a mix between a wargame challenge and a classic exploit.&lt;/p&gt;
 
 &lt;p&gt;You can find the binary/exploit &lt;a href=&quot;https://github.com/meffre-q/ctf/tree/master/pragyan/pwn&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
 
 &lt;h1 id=&quot;challenge&quot;&gt;Challenge&lt;/h1&gt;
-&lt;p&gt;This challenge is provided with a binary and an pair of IP/port. After a quick test, the binary is running into the given server.&lt;/p&gt;
+&lt;p&gt;This challenge is provided with a binary and a pair of IP/port. After a quick test, the binary is running into the given server.&lt;/p&gt;
 
 &lt;p&gt;Let first begin by recover many informations of our binary:&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/media/pragyan_infos.png&quot; alt=&quot;Check_binary&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;We can get the following informations:&lt;/p&gt;
+&lt;p&gt;From this commands output, we can get the following informations:&lt;/p&gt;
 &lt;ul&gt;
   &lt;li&gt;The binary is an ELF, compiled for x86_64 architecture,&lt;/li&gt;
   &lt;li&gt;It is linked dynamically,&lt;/li&gt;
@@ -40,7 +40,7 @@
 
 &lt;p&gt;&lt;img src=&quot;/assets/media/pragyan_first_try.png&quot; alt=&quot;First try&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;The binary start by asking a password. Using ltrace command, we can find the password: kaiokenx20&lt;/p&gt;
+&lt;p&gt;The binary start by asking a password. Using the ltrace command, we can find the password: kaiokenx20&lt;/p&gt;
 
 &lt;p&gt;Now let’s taking a look at the assembly code using IDA:&lt;/p&gt;
 
@@ -48,15 +48,15 @@
 
 &lt;p&gt;The last image represent the main() function. We can see two important informations:&lt;/p&gt;
 &lt;ul&gt;
-  &lt;li&gt;The service password is well the one we get using ltrace,&lt;/li&gt;
+  &lt;li&gt;The service password is well the one we found using ltrace,&lt;/li&gt;
   &lt;li&gt;There is a buffer overflow at the call of scanf().&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;We can’t exploit the buffer overflow because the binary has canary and so on we are going to have a stack smash error if we overflow it.&lt;/p&gt;
 
-&lt;p&gt;But as you can see on the last image, we can overflow some data which are one the stack using our buffer overflow. Especially we can overwrite the “var_30” of the stack which represent the name of a file which is going to be read later by the binary.&lt;/p&gt;
+&lt;p&gt;But as you can see on the last image, we can overflow some data which are one the stack using our buffer overflow. Especially we can overwrite the “var_30” of the stack which represent the name of a file which is going to be read later by the binary. (I will call this variable “filename” in this write-up)&lt;/p&gt;
 
-&lt;p&gt;Using this vulnerability, we are able to read every file that we know the name. But before being able to do this, we have several condition to bypass:&lt;/p&gt;
+&lt;p&gt;Using this vulnerability, we are able to read every file that we know the name. (The flag should be in a file) But before being able to do this, we have several condition to bypass:&lt;/p&gt;
 
 &lt;ul&gt;
   &lt;li&gt;Firstly, we don’t know the name of the file which contain our flag.&lt;/li&gt;
@@ -70,9 +70,19 @@
 
 &lt;p&gt;&lt;img src=&quot;/assets/media/pragyan_first_condition.png&quot; alt=&quot;First condition&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;As you can see on the last image, the binary display some text on its output which represent different entry of a menu, then ask for a number on its input and then it jump to a piece of code depending of the user input. (Like a switch statement in C language) Every piece of code overwrite the filename we write using our buffer overflow so we must not enter in this function. The switch has a default value, if the user input doesn’t match with a number between the value ‘1’ and ‘7’ the binary jump to next step without overwriting our filename!&lt;/p&gt;
+&lt;p&gt;As you can see on the last image, the binary display some text on its output which represent different entry of a menu, then ask for a number on its input and then it jump to a piece of code depending of the user input. (Like a switch statement in C language) Every piece of code overwrite the filename we write using our buffer overflow with useless data. So we must not enter into this function in order to being able to control the filename.&lt;/p&gt;
 
-&lt;p&gt;So we just have to enter a value which respect this conditon: value &amp;gt;= 8&lt;/p&gt;
+&lt;p&gt;The switch has a default value, if the user input doesn’t match with a number between the value ‘1’ and ‘7’ the binary jump to next step without overwriting our filename!&lt;/p&gt;
+
+&lt;table&gt;
+  &lt;tbody&gt;
+    &lt;tr&gt;
+      &lt;td&gt;So we just have to enter a value which respect this conditon: value &amp;gt;= 8&lt;/td&gt;
+      &lt;td&gt; &lt;/td&gt;
+      &lt;td&gt;value &amp;lt;= 0&lt;/td&gt;
+    &lt;/tr&gt;
+  &lt;/tbody&gt;
+&lt;/table&gt;
 
 &lt;p&gt;It’s ok for the first step.&lt;/p&gt;
 
@@ -80,7 +90,7 @@
 
 &lt;p&gt;&lt;img src=&quot;/assets/media/pragyan_second_condition.png&quot; alt=&quot;Second condition&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;If the user enter 7 for the menu entry, the binary set the filename to “txt.galf” (which is flag.txt in reverse) then display something on the output and finish by a call to exit().&lt;/p&gt;
+&lt;p&gt;If the user enter 7 at the menu entry step, the binary set the filename to “txt.galf” (which is flag.txt in reverse) then display something on the output and finish by a call to exit(). (It doesn’t enter in the function which read the file if we send ‘7’ on the input)&lt;/p&gt;
 
 &lt;p&gt;Let’s try to used “flag.txt” as filename.&lt;/p&gt;
 
@@ -106,7 +116,6 @@ python &lt;span class=&quot;nt&quot;&gt;-c&lt;/span&gt; &lt;span class=&quot;s1&
 &lt;p&gt;&lt;img src=&quot;/assets/media/pragyan_flag.png&quot; alt=&quot;Done&quot; /&gt;&lt;/p&gt;
 
 &lt;p&gt;Done.&lt;/p&gt;
-
 </description>
 				<pubDate>Sun, 04 Mar 2018 00:00:00 +0000</pubDate>
 				<link>/write-up/2018/03/04/write_up_pragyan.html</link>

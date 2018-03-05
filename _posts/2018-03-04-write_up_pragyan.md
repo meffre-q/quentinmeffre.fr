@@ -7,18 +7,18 @@ tags: [pwn]
 **Points:** 200 **Category:** Pwn **Description:**  Chris is trying out to be a police officer and the applications have just been sent into the police academy. He is really eager to find out about his competition. Help it him back the system and view the other applicant’s applications.
 
 # Surroundings
-This week-end took place the [Pragyan CTF](https://www.pragyan.org/18/home/). This Write-Up is going to show you how to solve the "Old school hack" pwnable challenges. This challenge was interesting because it was a mix between a wargame challenge and a classic exploit.
+This week-end took place the [Pragyan CTF](https://www.pragyan.org/18/home/). This Write-Up is going to show you my solution for the "Old school hack" pwnable challenge. This challenge is interesting because it is a mix between a wargame challenge and a classic exploit.
 
 You can find the binary/exploit [here](https://github.com/meffre-q/ctf/tree/master/pragyan/pwn).
 
 # Challenge
-This challenge is provided with a binary and an pair of IP/port. After a quick test, the binary is running into the given server.
+This challenge is provided with a binary and a pair of IP/port. After a quick test, the binary is running into the given server.
 
 Let first begin by recover many informations of our binary:
 
 ![Check_binary](/assets/media/pragyan_infos.png)
 
-We can get the following informations:
+From this commands output, we can get the following informations:
 - The binary is an ELF, compiled for x86_64 architecture,
 - It is linked dynamically,
 - It is not stripped,
@@ -32,21 +32,21 @@ Let's try to execute it now:
 
 ![First try](/assets/media/pragyan_first_try.png)
 
-The binary start by asking a password. Using ltrace command, we can find the password: kaiokenx20
+The binary start by asking a password. Using the ltrace command, we can find the password: kaiokenx20
 
 Now let's taking a look at the assembly code using IDA:
 
 ![First ida](/assets/media/pragyan_first_ida.png)
 
 The last image represent the main() function. We can see two important informations:
-- The service password is well the one we get using ltrace,
+- The service password is well the one we found using ltrace,
 - There is a buffer overflow at the call of scanf().
 
 We can't exploit the buffer overflow because the binary has canary and so on we are going to have a stack smash error if we overflow it.
 
-But as you can see on the last image, we can overflow some data which are one the stack using our buffer overflow. Especially we can overwrite the "var_30" of the stack which represent the name of a file which is going to be read later by the binary.
+But as you can see on the last image, we can overflow some data which are one the stack using our buffer overflow. Especially we can overwrite the "var_30" of the stack which represent the name of a file which is going to be read later by the binary. (I will call this variable "filename" in this write-up)
 
-Using this vulnerability, we are able to read every file that we know the name. But before being able to do this, we have several condition to bypass:
+Using this vulnerability, we are able to read every file that we know the name. (The flag should be in a file) But before being able to do this, we have several condition to bypass:
 
 - Firstly, we don't know the name of the file which contain our flag.
 - Secondly, we are going to see that the data that we overwrite are overwrite later by the binary.
@@ -58,9 +58,11 @@ The first one:
 
 ![First condition](/assets/media/pragyan_first_condition.png)
 
-As you can see on the last image, the binary display some text on its output which represent different entry of a menu, then ask for a number on its input and then it jump to a piece of code depending of the user input. (Like a switch statement in C language) Every piece of code overwrite the filename we write using our buffer overflow so we must not enter in this function. The switch has a default value, if the user input doesn't match with a number between the value '1' and '7' the binary jump to next step without overwriting our filename!
+As you can see on the last image, the binary display some text on its output which represent different entry of a menu, then ask for a number on its input and then it jump to a piece of code depending of the user input. (Like a switch statement in C language) Every piece of code overwrite the filename we write using our buffer overflow with useless data. So we must not enter into this function in order to being able to control the filename.
 
-So we just have to enter a value which respect this conditon: value >= 8
+The switch has a default value, if the user input doesn't match with a number between the value '1' and '7' the binary jump to next step without overwriting our filename!
+
+So we just have to enter a value which respect this conditon: value >= 8 || value <= 0
 
 It's ok for the first step.
 
@@ -68,7 +70,7 @@ Now the second step is very easy. If we check the assembly code, we can see the 
 
 ![Second condition](/assets/media/pragyan_second_condition.png)
 
-If the user enter 7 for the menu entry, the binary set the filename to "txt.galf" (which is flag.txt in reverse) then display something on the output and finish by a call to exit().
+If the user enter 7 at the menu entry step, the binary set the filename to "txt.galf" (which is flag.txt in reverse) then display something on the output and finish by a call to exit(). (It doesn't enter in the function which read the file if we send '7' on the input)
 
 Let's try to used "flag.txt" as filename.
 
@@ -95,4 +97,3 @@ Now let's try it:
 ![Done](/assets/media/pragyan_flag.png)
 
 Done.
-
