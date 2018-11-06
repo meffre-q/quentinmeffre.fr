@@ -260,6 +260,6 @@ Let's test it:
 Done.
 
 # References
-- https://sploitfun.wordpress.com/
-- https://code.woboq.org/userspace/glibc/malloc/malloc.c.html
-- https://heap-exploitation.dhavalkapil.com/diving_into_glibc_heap/
+- [https://sploitfun.wordpress.com/](https://sploitfun.wordpress.com/)
+- [https://code.woboq.org/userspace/glibc/malloc/malloc.c.html](https://code.woboq.org/userspace/glibc/malloc/malloc.c.html)
+- [https://heap-exploitation.dhavalkapil.com/diving_into_glibc_heap/](https://heap-exploitation.dhavalkapil.com/diving_into_glibc_heap/)

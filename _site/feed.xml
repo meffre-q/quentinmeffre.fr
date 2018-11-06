@@ -277,9 +277,9 @@
 
 &lt;h1 id=&quot;references&quot;&gt;References&lt;/h1&gt;
 &lt;ul&gt;
-  &lt;li&gt;https://sploitfun.wordpress.com/&lt;/li&gt;
-  &lt;li&gt;https://code.woboq.org/userspace/glibc/malloc/malloc.c.html&lt;/li&gt;
-  &lt;li&gt;https://heap-exploitation.dhavalkapil.com/diving_into_glibc_heap/&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://sploitfun.wordpress.com/&quot;&gt;https://sploitfun.wordpress.com/&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://code.woboq.org/userspace/glibc/malloc/malloc.c.html&quot;&gt;https://code.woboq.org/userspace/glibc/malloc/malloc.c.html&lt;/a&gt;&lt;/li&gt;
+  &lt;li&gt;&lt;a href=&quot;https://heap-exploitation.dhavalkapil.com/diving_into_glibc_heap/&quot;&gt;https://heap-exploitation.dhavalkapil.com/diving_into_glibc_heap/&lt;/a&gt;&lt;/li&gt;
 &lt;/ul&gt;
 </description>
 				<pubDate>Fri, 02 Nov 2018 00:00:00 +0100</pubDate>
