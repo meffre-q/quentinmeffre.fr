@@ -7,11 +7,11 @@
 		<atom:link href="/feed.xml" rel="self" type="application/rss+xml" />
 		
 			<item>
-				<title>Fastbin attack</title>
-				<description>&lt;p&gt;Explanation of an heap exploit method, the fastbin duplicate attack. This post is based on the babyheap challenge from the 0ctf Quals 2017.&lt;/p&gt;
+				<title>Fast bin attack</title>
+				<description>&lt;p&gt;Explanation of a heap exploit method, the fast bin duplicate attack. This post is based on the babyheap challenge from the 0ctf Quals 2017.&lt;/p&gt;
 
 &lt;h1 id=&quot;surroundings&quot;&gt;Surroundings&lt;/h1&gt;
-&lt;p&gt;Currently I learn the heap exploit using the &lt;a href=&quot;https://github.com/shellphish/how2heap&quot;&gt;How2Heap&lt;/a&gt; repository. Today I’m gonna tell you my interpretation of the fastbin attack using the &lt;a href=&quot;https://github.com/ctfs/write-ups-2017/tree/master/0ctf-quals-2017/pwn/Baby-Heap-2017-255&quot;&gt;babyheap&lt;/a&gt; challenge from the 0ctf quals 2017.&lt;/p&gt;
+&lt;p&gt;Currently I learn the heap exploit using the &lt;a href=&quot;https://github.com/shellphish/how2heap&quot;&gt;How2Heap&lt;/a&gt; repository. Today I’m gonna tell you my interpretation of the fast bin attack using the &lt;a href=&quot;https://github.com/ctfs/write-ups-2017/tree/master/0ctf-quals-2017/pwn/Baby-Heap-2017-255&quot;&gt;babyheap&lt;/a&gt; challenge from the 0ctf quals 2017.&lt;/p&gt;
 
 &lt;h1 id=&quot;introduction&quot;&gt;Introduction&lt;/h1&gt;
 &lt;p&gt;This challenge is provided with a binary and its LibC.&lt;/p&gt;
@@ -32,7 +32,7 @@
   &lt;li&gt;Full REad onLy RelOcation (We can’t overwrite the GOT entry’s) ;&lt;/li&gt;
   &lt;li&gt;Stack smash protection (We must take care about the stack canary’s) ;&lt;/li&gt;
   &lt;li&gt;The stack is executable (We can’t execute a shellcode on this memory segment) ;&lt;/li&gt;
-  &lt;li&gt;Position Independant Executable is enable (We must leak address’s if we want to use ROP) ;&lt;/li&gt;
+  &lt;li&gt;Position Independent Executable is enabled (We must leak address’s if we want to use ROP) ;&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;Let’s try to execute it now:&lt;/p&gt;
@@ -41,9 +41,9 @@
 
 &lt;p&gt;It seems to be classic heap challenge. We can manage the heap using different command. The following commands are available:&lt;/p&gt;
 &lt;ul&gt;
-  &lt;li&gt;Allocate, which allocate a chunk (using calloc()) on the heap using a given size (less than 0x1000) and setup a struct with the given size and the allocated chunk, but the struct is not on the heap ;&lt;/li&gt;
+  &lt;li&gt;Allocate, which allocate a chunk (using calloc()) on the heap using a given size (less than 0x1000) and setup a structure with the given size and the allocated chunk, but the structure is not on the heap ;&lt;/li&gt;
   &lt;li&gt;Fill, which fill a chunk at a given index using both a given size and content ;&lt;/li&gt;
-  &lt;li&gt;Free, which free a chunk at a given index, zeroed the chunk pointer and setup the chunk’s struct to unused ;&lt;/li&gt;
+  &lt;li&gt;Free, which free a chunk at a given index, zeroed the chunk pointer and setup the chunk’s structure to unused ;&lt;/li&gt;
   &lt;li&gt;Dump, which dump the content of a chunk at a given index ;&lt;/li&gt;
   &lt;li&gt;Exit, which exit the process ;&lt;/li&gt;
 &lt;/ul&gt;
@@ -53,24 +53,24 @@
 
 &lt;p&gt;&lt;img src=&quot;/assets/media/fastbin_allocate_vuln.png&quot; alt=&quot;Vulnerability&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;As you can see on the above image, the &lt;code class=&quot;highlighter-rouge&quot;&gt;fill&lt;/code&gt; command ask for a size which is used to read a string of the given size using the &lt;code class=&quot;highlighter-rouge&quot;&gt;read_str&lt;/code&gt; function in the given chunk. There is no boundary check, this allow an attacker to overflow the data located on the heap.&lt;/p&gt;
+&lt;p&gt;As you can see on the above image, the &lt;code class=&quot;highlighter-rouge&quot;&gt;fill&lt;/code&gt; command ask for a size which is used to read a string of the given size using the &lt;code class=&quot;highlighter-rouge&quot;&gt;read_str&lt;/code&gt; function in the given chunk. There is no boundary check, this allows an attacker to overflow the data located on the heap.&lt;/p&gt;
 
-&lt;p&gt;To exploit this heap overflow, I used the &lt;code class=&quot;highlighter-rouge&quot;&gt;fastbin attack&lt;/code&gt; method.&lt;/p&gt;
+&lt;p&gt;To exploit this heap overflow, I used the &lt;code class=&quot;highlighter-rouge&quot;&gt;fast bin attack&lt;/code&gt; method.&lt;/p&gt;
 
 &lt;p&gt;The exploit plan is the following one:&lt;/p&gt;
 &lt;ul&gt;
-  &lt;li&gt;Leak the LibC using fastbins and smallbin ;&lt;/li&gt;
+  &lt;li&gt;Leak the LibC using fast bins and small bin ;&lt;/li&gt;
   &lt;li&gt;Tricking malloc() into returning the address of &lt;code class=&quot;highlighter-rouge&quot;&gt;__malloc_hook&lt;/code&gt; ;&lt;/li&gt;
   &lt;li&gt;Overwrite &lt;code class=&quot;highlighter-rouge&quot;&gt;__malloc_hook&lt;/code&gt; with the address of a one gadget ;&lt;/li&gt;
   &lt;li&gt;Trigger the hook using malloc()!&lt;/li&gt;
 &lt;/ul&gt;
 
-&lt;h1 id=&quot;fastbin-attack&quot;&gt;Fastbin attack&lt;/h1&gt;
-&lt;p&gt;The fastbin’s array is located in the &lt;a href=&quot;https://code.woboq.org/userspace/glibc/malloc/malloc.c.html#malloc_state&quot;&gt;malloc_state&lt;/a&gt; structure. This array has a size of ten and each fastbin hold bins of the same size. (0x20, 0x30, 0x40, etc.) If you want more info about how fastbins work, check &lt;a href=&quot;https://heap-exploitation.dhavalkapil.com/&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
+&lt;h1 id=&quot;fast-bin-attack&quot;&gt;Fast bin attack&lt;/h1&gt;
+&lt;p&gt;The fast bin’s array is located in the &lt;a href=&quot;https://code.woboq.org/userspace/glibc/malloc/malloc.c.html#malloc_state&quot;&gt;malloc_state&lt;/a&gt; structure. This array has a size of ten and each fast bin hold bins of the same size. (0x20, 0x30, 0x40, etc.) If you want more info about how fast bins work, check &lt;a href=&quot;https://heap-exploitation.dhavalkapil.com/&quot;&gt;here&lt;/a&gt;.&lt;/p&gt;
 
-&lt;p&gt;The goal of this attack is to overwrite the data of a fastbin to trick malloc() into returning a nearly-arbitrary pointer.&lt;/p&gt;
+&lt;p&gt;The goal of this attack is to overwrite the data of a fast bin to trick malloc() into returning a nearly-arbitrary pointer.&lt;/p&gt;
 
-&lt;p&gt;ptmalloc2, the GlibC allocator got many update seens it was implemented. Today it is a little bit harder to exploit this technique due to the security check that have been added to malloc/free. To exploit our binary, we need to bypass the following check in malloc():&lt;/p&gt;
+&lt;p&gt;ptmalloc2, the GlibC allocator got many updates seen it was implemented. Today it is a bit harder to exploit this technique due to the security check that have been added to malloc/free. To exploit our binary, we need to bypass the following check in malloc():&lt;/p&gt;
 
 &lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kt&quot;&gt;size_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;victim_idx&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;fastbin_index&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;chunksize&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;));&lt;/span&gt;
 &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;__builtin_expect&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;victim_idx&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;idx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
@@ -78,7 +78,7 @@
 &lt;span class=&quot;n&quot;&gt;check_remalloced_chunk&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;av&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;victim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nb&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;In case malloc() found a fastbin which has the same size as the requested one, it gonna check if the size of the returned chunk is in the same &lt;code class=&quot;highlighter-rouge&quot;&gt;index&lt;/code&gt; than the size given to malloc(). If both &lt;code class=&quot;highlighter-rouge&quot;&gt;index&lt;/code&gt; are not equal, malloc will exit and print an error.&lt;/p&gt;
+&lt;p&gt;In case malloc() found a fast bin which has the same size as the requested one, it checks if the size of the returned chunk is in the same &lt;code class=&quot;highlighter-rouge&quot;&gt;index&lt;/code&gt; than the size given to malloc(). If both &lt;code class=&quot;highlighter-rouge&quot;&gt;index&lt;/code&gt; are not equal, malloc will exit and print an error.&lt;/p&gt;
 
 &lt;p&gt;But if both size are in the same index, malloc() will return our arbitrary pointer!&lt;/p&gt;
 
@@ -94,7 +94,7 @@
 
 &lt;p&gt;&lt;img src=&quot;/assets/media/fastbin_init_state.png&quot; alt=&quot;heap_layout&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;The heap is compose of 4 fastbins which have a size of 0x20 with there header and 2 smallbins which have a size of 0x90 with the header. The fifth first bins are used to leak the LibC and the last smallbin is used to force free() to put the fifth chunk into the unsortedbin and so populated the forward pointer when we will free it. If this chunk is not present, free() will consolidate the freed chunk into the top chunk, as you can see below:&lt;/p&gt;
+&lt;p&gt;The heap is composed of 4 fast bins which have a size of 0x20 with their header and 2 small bins which have a size of 0x90 with the header. The fifth first bins are used to leak the LibC and the last small bin is used to force free() to put the fifth chunk into the unsorted bin and so populated the forward pointer when we will free it. If this chunk is not present, free() will consolidate the freed chunk into the top chunk, as you can see below:&lt;/p&gt;
 &lt;div class=&quot;language-c highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
   &lt;span class=&quot;n&quot;&gt;size&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nextsize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
   &lt;span class=&quot;n&quot;&gt;set_head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;p&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;size&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;|&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;PREV_INUSE&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
@@ -103,32 +103,32 @@
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;This cause free() not to populated the forward pointer.&lt;/p&gt;
+&lt;p&gt;This cause free() not to populate the forward pointer.&lt;/p&gt;
 
 &lt;p&gt;The leak technique is in 6 parts:&lt;/p&gt;
 &lt;ul&gt;
   &lt;li&gt;We first &lt;code class=&quot;highlighter-rouge&quot;&gt;free&lt;/code&gt;, respectively, the third and second chunk to populate the forward pointer of the second chunk ;&lt;/li&gt;
-  &lt;li&gt;Then we use the heap overflow on the first chunk to overwrite the &lt;code class=&quot;highlighter-rouge&quot;&gt;Less Significant Byte&lt;/code&gt; of the forward pointer of the &lt;code class=&quot;highlighter-rouge&quot;&gt;second chunk&lt;/code&gt; with the value &lt;code class=&quot;highlighter-rouge&quot;&gt;0x80&lt;/code&gt;, which is the LSB of the first smallbin. The idea here is to trick malloc into returning the smallbin chunk. Using this we will have two pointers which point to the same address ;&lt;/li&gt;
-  &lt;li&gt;If we try to malloc now, malloc will thrown an error because of the chunk size condition we saw just before. So we need to edit the size of the first smallbin in order to trick malloc. To do this, we will use another time our heap overflow on the fourth allocated chunk to edit the &lt;code class=&quot;highlighter-rouge&quot;&gt;mchunk_size&lt;/code&gt; header field of the first smallbin chunk with the value &lt;code class=&quot;highlighter-rouge&quot;&gt;0x21&lt;/code&gt;.&lt;/li&gt;
+  &lt;li&gt;Then we use the heap overflow on the first chunk to overwrite the &lt;code class=&quot;highlighter-rouge&quot;&gt;Less Significant Byte&lt;/code&gt; of the forward pointer of the &lt;code class=&quot;highlighter-rouge&quot;&gt;second chunk&lt;/code&gt; with the value &lt;code class=&quot;highlighter-rouge&quot;&gt;0x80&lt;/code&gt;, which is the LSB of the first small bin. The idea here is to trick malloc into returning the small bin chunk. Using this we will have two pointers which point to the same address ;&lt;/li&gt;
+  &lt;li&gt;If we try to malloc now, malloc will raise an error because of the chunk size condition we saw just before. So we need to edit the size of the first small bin in order to trick malloc. To do this, we will use another time our heap overflow on the fourth allocated chunk to edit the &lt;code class=&quot;highlighter-rouge&quot;&gt;mchunk_size&lt;/code&gt; header field of the first small bin chunk with the value &lt;code class=&quot;highlighter-rouge&quot;&gt;0x21&lt;/code&gt;.&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;p&gt;After these steps, the heap layout look like below:&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;/assets/media/fastbin_corrupted_size.png&quot; alt=&quot;fastbin_corrupted_size&quot; /&gt;&lt;/p&gt;
 
-&lt;p&gt;As you can see, the Less Significant Byte of the forward pointer of the second chunk has been overflowed by the one of the first smallbin. The size of the first smallbin has also been overflowed by the correct size of our fastbin, 0x20. The next step are the following:&lt;/p&gt;
+&lt;p&gt;As you can see, the Less Significant Byte of the forward pointer of the second chunk has been overflowed by the one of the first small bin. The size of the first small bin has also been overflowed by the correct size of our fast bin, 0x20. Next step are the following:&lt;/p&gt;
 &lt;ul&gt;
-  &lt;li&gt;We gonna alocate two chunks of size 0x20. The first one will have the address of the first freed chunk and the second one will have the address of the first smallbin because of our previous trick. Thanks to this, we have two chunks which both point to the &lt;code class=&quot;highlighter-rouge&quot;&gt;same address&lt;/code&gt; which is the first smallbin chunk.&lt;/li&gt;
-  &lt;li&gt;Before beeing able to leak our LibC, we must set again the size of the first &lt;code class=&quot;highlighter-rouge&quot;&gt;smallbin&lt;/code&gt;, otherwise we will have an error when we gonna free it. (Because we need to free it to populate the forward/backward pointer) So we will use one more time our heap overflow to set the first smallbin size to its initialize size which was 0x90.&lt;/li&gt;
-  &lt;li&gt;Now its pretty easy to leak the LibC, we just have to free the first smallbin, this will populated the forward/backward pointer of this bins with one of the addresses of the LibC. Then we can dump the content of the second pointer which also point to the freed area but as this one is up, we can use it.&lt;/li&gt;
+  &lt;li&gt;We allocate two chunks of size 0x20. The first one will have the address of the first freed chunk and the second one will have the address of the first small bin because of our previous trick. Thanks to this, we have two chunks which both point to the &lt;code class=&quot;highlighter-rouge&quot;&gt;same address&lt;/code&gt; which is the first small bin chunk.&lt;/li&gt;
+  &lt;li&gt;Before being able to leak the LibC, we must set again the size of the first &lt;code class=&quot;highlighter-rouge&quot;&gt;small bin&lt;/code&gt;, otherwise we will have an error when we free it. (Because we need to free it to populate the forward/backward pointer) So we will use one more time our heap overflow to set the first small bin size to its initialize size which was 0x90.&lt;/li&gt;
+  &lt;li&gt;Now its pretty easy to leak the LibC, we just have to free the first small bin, this will populate the forward/backward pointer of this bin with one of the LibC address’s. Then we can dump the content of the second pointer which also point to the freed area but as this one is up, we can use it.&lt;/li&gt;
 &lt;/ul&gt;
 
 &lt;h1 id=&quot;exploitation&quot;&gt;Exploitation&lt;/h1&gt;
-&lt;p&gt;Now that we defeat the ASLR, we just have to trick malloc into returning the &lt;code class=&quot;highlighter-rouge&quot;&gt;__malloc_hook&lt;/code&gt; address’s then overwrite it with our &lt;code class=&quot;highlighter-rouge&quot;&gt;one_gadget&lt;/code&gt; address’s.&lt;/p&gt;
+&lt;p&gt;Now that we defeat the ASLR, we just have to trick malloc into returning the &lt;code class=&quot;highlighter-rouge&quot;&gt;__malloc_hook&lt;/code&gt; address’s then overwrite it with our &lt;code class=&quot;highlighter-rouge&quot;&gt;one gadget&lt;/code&gt; address’s.&lt;/p&gt;
 
 &lt;p&gt;This exploit gonna be done in 6 steps:&lt;/p&gt;
 &lt;ul&gt;
-  &lt;li&gt;First we will allocate 4 fastbins which have a size of &lt;code class=&quot;highlighter-rouge&quot;&gt;0x70&lt;/code&gt;. The size is very important, you will see why.&lt;/li&gt;
+  &lt;li&gt;First we will allocate 4 fast bins which have a size of &lt;code class=&quot;highlighter-rouge&quot;&gt;0x70&lt;/code&gt;. The size is very important, you will see why.&lt;/li&gt;
   &lt;li&gt;Then we are going to free the last one and the one before it in that order.&lt;/li&gt;
   &lt;li&gt;Now we will overflow the forward pointer of the second freed chunk using the allocated one before it with the address of the memory area we want malloc() to return. But we can’t simply put the address’s of the &lt;code class=&quot;highlighter-rouge&quot;&gt;__malloc_hook&lt;/code&gt; because of the following:&lt;/li&gt;
 &lt;/ul&gt;
@@ -141,7 +141,7 @@
 &lt;p&gt;The size &lt;code class=&quot;highlighter-rouge&quot;&gt;0x00007ffff7ab63c0&lt;/code&gt; is not correct so, because of the size condition we saw before, malloc will raise an error as this size is not in the following range:
 &lt;code class=&quot;highlighter-rouge&quot;&gt;0x70 &amp;lt; size &amp;lt; 0x7f&lt;/code&gt;&lt;/p&gt;
 
-&lt;p&gt;But, above &lt;code class=&quot;highlighter-rouge&quot;&gt;__malloc_hook&lt;/code&gt; there are these datas into the memory:&lt;/p&gt;
+&lt;p&gt;But, above &lt;code class=&quot;highlighter-rouge&quot;&gt;__malloc_hook&lt;/code&gt; there are these data’s into the memory:&lt;/p&gt;
 &lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;gef➤  x/8gx 0x7ffff7dd3af0-35
 0x7ffff7dd3acd &amp;lt;_IO_wide_data_0+301&amp;gt;:	0xfff7dcff00000000	0x000000000000007f
 0x7ffff7dd3add:	0xfff7ab6420000000	0xfff7ab63c000007f
@@ -149,10 +149,10 @@
 0x7ffff7dd3afd:	0x0100000000000000	0x0000000000000000
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
 
-&lt;p&gt;As the size 0x7f is in the above range, we can use the offset of the address &lt;code class=&quot;highlighter-rouge&quot;&gt;0x7ffff7dd3acd&lt;/code&gt;. We will just have to take care of the padding between both addresses to being sure that we overwrited the good address’s.&lt;/p&gt;
+&lt;p&gt;As the size 0x7f is in the above range, we can use the offset of the address &lt;code class=&quot;highlighter-rouge&quot;&gt;0x7ffff7dd3acd&lt;/code&gt;. We will just have to take care of the padding between both addresses to being sure that we overwrote the good address’s.&lt;/p&gt;
 
 &lt;ul&gt;
-  &lt;li&gt;Then we have to allocate two chunks in order to tricking malloc into returning our arbitrary pointer. The arbitrary pointer will the one returned by the second malloc().&lt;/li&gt;
+  &lt;li&gt;Then we have to allocate two chunks in order to trick malloc into returning our arbitrary pointer. The arbitrary pointer will the one returned by the second malloc().&lt;/li&gt;
   &lt;li&gt;Then we fill the returned arbitrary pointer with the address’s of our one gadget.&lt;/li&gt;
   &lt;li&gt;To finish we will allocate a chunk, this will call malloc but because of the below code from malloc():&lt;/li&gt;
 &lt;/ul&gt;
