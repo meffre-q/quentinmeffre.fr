@@ -167,7 +167,7 @@
 	 </span>
 	  <div class="article_body">
 	  <h1 id="1-surroundings">1. Surroundings</h1>
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>uname <span class="nt">-a</span>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">uname</span> <span class="nt">-a</span>
 Linux debian 3.16.0-4-amd64 <span class="c">#1 SMP Debian 3.16.39-1+deb8u2 (2017-03-07) x86_64 GNU/Linux</span>
 
 <span class="nv">$ </span>lsb_release <span class="nt">-a</span>
@@ -367,7 +367,7 @@ Disassembly of section .text:
 
 <p>It might be correct. There is no “00” bytes. Now a little trick to extract the opcode from the binary:</p>
 
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="k">for </span>i <span class="k">in</span> <span class="sb">`</span>objdump <span class="nt">-d</span> shellcode | tr <span class="s1">'\t'</span> <span class="s1">' '</span> | tr <span class="s1">' '</span> <span class="s1">'\n'</span> | egrep <span class="s1">'^[0-9a-f]{2}$'</span> <span class="sb">`</span> <span class="p">;</span> <span class="k">do </span><span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="se">\\\x</span><span class="nv">$i</span><span class="s2">"</span> <span class="p">;</span> <span class="k">done</span>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="k">for </span>i <span class="k">in</span> <span class="sb">`</span>objdump <span class="nt">-d</span> shellcode | <span class="nb">tr</span> <span class="s1">'\t'</span> <span class="s1">' '</span> | <span class="nb">tr</span> <span class="s1">' '</span> <span class="s1">'\n'</span> | egrep <span class="s1">'^[0-9a-f]{2}$'</span> <span class="sb">`</span> <span class="p">;</span> <span class="k">do </span><span class="nb">echo</span> <span class="nt">-n</span> <span class="s2">"</span><span class="se">\\\x</span><span class="nv">$i</span><span class="s2">"</span> <span class="p">;</span> <span class="k">done</span>
 <span class="se">\x</span>eb<span class="se">\x</span>39<span class="se">\x</span>5f<span class="se">\x</span>80<span class="se">\x</span>77<span class="se">\x</span>0b<span class="se">\x</span>41<span class="se">\x</span>48<span class="se">\x</span>31<span class="se">\x</span>c0<span class="se">\x</span>04<span class="se">\x</span>02<span class="se">\x</span>48<span class="se">\x</span>31<span class="se">\x</span>f6<span class="se">\x</span>0f<span class="se">\x</span>05<span class="se">\x</span>48<span class="se">\x</span>89<span class="se">\x</span>c7<span class="se">\x</span>48<span class="se">\x</span>8d<span class="se">\x</span>34<span class="se">\x</span>24<span class="se">\x</span>48<span class="se">\x</span>31<span class="se">\x</span>d2<span class="se">\x</span>66<span class="se">\x</span>ba<span class="se">\x</span>ff<span class="se">\x</span>0f<span class="se">\x</span>48<span class="se">\x</span>31<span class="se">\x</span>c0<span class="se">\x</span>0f<span class="se">\x</span>05<span class="se">\x</span>48<span class="se">\x</span>31<span class="se">\x</span>ff<span class="se">\x</span>40<span class="se">\x</span>b7<span class="se">\x</span>01<span class="se">\x</span>48<span class="se">\x</span>89<span class="se">\x</span>c2<span class="se">\x</span>48<span class="se">\x</span>31<span class="se">\x</span>c0<span class="se">\x</span>b0<span class="se">\x</span>01<span class="se">\x</span>0f<span class="se">\x</span>05<span class="se">\x</span>48<span class="se">\x</span>31<span class="se">\x</span>c0<span class="se">\x</span>b0<span class="se">\x</span>3c<span class="se">\x</span>0f<span class="se">\x</span>05<span class="se">\x</span>e8<span class="se">\x</span>c2<span class="se">\x</span>ff<span class="se">\x</span>ff<span class="se">\x</span>ff<span class="se">\x</span>2f<span class="se">\x</span>65<span class="se">\x</span>74<span class="se">\x</span>63<span class="se">\x</span>2f<span class="se">\x</span>70<span class="se">\x</span>61<span class="se">\x</span>73<span class="se">\x</span>73<span class="se">\x</span>77<span class="se">\x</span>64<span class="se">\x</span>41%
 </code></pre></div></div>
 
@@ -397,7 +397,7 @@ root:x:0:0:root:/root:/bin/bash
 daemon:x:1:1:daemon:/usr/sbin:/usr/sbin/nologin
 bin:x:2:2:bin:/bin:/usr/sbin/nologin
 sys:x:3:3:sys:/dev:/usr/sbin/nologin
-sync:x:4:65534:sync:/bin:/bin/sync
+<span class="nb">sync</span>:x:4:65534:sync:/bin:/bin/sync
 games:x:5:60:games:/usr/games:/usr/sbin/nologin
 man:x:6:12:man:/var/cache/man:/usr/sbin/nologin
 lp:x:7:7:lp:/var/spool/lpd:/usr/sbin/nologin

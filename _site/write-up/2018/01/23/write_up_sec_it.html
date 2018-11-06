@@ -197,8 +197,8 @@
 <p><img src="/assets/media/blind_fmt.png" alt="Connect to service" /></p>
 
 <p>It seems to be a basic authentication system. The vulnerability is very easy to find. When we type a wrong password, the service display on its output the input password followed by “ is a wrong password!”. I think the C code looks like this:</p>
-<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">printf</span><span class="p">(</span><span class="n">password</span><span class="p">);</span>                   <span class="c1">// Vulnerable to format strings
-</span><span class="n">printf</span><span class="p">(</span><span class="s">" is a wrong password!"</span><span class="p">);</span>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">printf</span><span class="p">(</span><span class="n">password</span><span class="p">);</span>                   <span class="c1">// Vulnerable to format strings</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">" is a wrong password!"</span><span class="p">);</span>
 </code></pre></div></div>
 
 <p>The developer forgot to hard-code the format string of printf(), this means that we have fully control on the format argument.</p>
@@ -344,9 +344,9 @@ For example the following functions don’t respect this condition: puts, fread,
 
 <h1 id="correction">Correction</h1>
 <p>To correct the whole vulnerability it is very simple, the developer has only to add a format to the call to printf(), like this:</p>
-<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">printf</span><span class="p">(</span><span class="n">password</span><span class="p">);</span>           <span class="c1">// Bad
-</span><span class="n">printf</span><span class="p">(</span><span class="s">"%s"</span><span class="p">,</span> <span class="n">password</span><span class="p">);</span>     <span class="c1">// Good
-</span></code></pre></div></div>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">printf</span><span class="p">(</span><span class="n">password</span><span class="p">);</span>           <span class="c1">// Bad</span>
+<span class="n">printf</span><span class="p">(</span><span class="s">"%s"</span><span class="p">,</span> <span class="n">password</span><span class="p">);</span>     <span class="c1">// Good</span>
+</code></pre></div></div>
 
 <h1 id="thanks">Thanks</h1>
 <p>I would like to thanks the SEC-IT company for allowing me to post this write-up and also thanks you very much to the author of this very interesting challenge. :)</p>
@@ -389,7 +389,7 @@ For example the following functions don’t respect this condition: puts, fread,
 			 
 				<li>
 					<a href="/tags.html#pwn-ref">
-					pwn <span>(10)</span>
+					pwn <span>(11)</span>
 					
 					</a>
 				</li>
